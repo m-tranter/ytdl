@@ -1,0 +1,31 @@
+{
+  "name": "ytdl",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "env YTDL_NO_UPDATE=1 node app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "fluent-ffmpeg": "^2.1.2",
+    "gm": "^1.23.1",
+    "image-size": "^1.0.0",
+    "mongodb": "^4.1.1",
+    "node-id3": "^0.2.3",
+    "request": "^2.88.2",
+    "ytdl-core": "^4.9.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-config-prettier": "^8.3.0",
+    "nodemon": "^2.0.12",
+    "prettier": "2.3.2"
+  }
+}

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+  <head> </head>
+
+  <style>
+    body {
+      background-color: Wheat;
+    }
+
+    h1,
+    h2 {
+      color: Navy;
+      font-family: "Comic Sans MS";
+      text-align: center;
+      font-size: 36px;
+    }
+
+    h2 {
+      width: 70%;
+      padding-bottom: 5px;
+      font-size: 24px;
+      background-color: powderblue;
+      border-radius: 10px;
+      border-style: solid;
+      border-color: powderblue;
+      border-width: 2px;
+    }
+
+    #go,
+    #url {
+      padding: 5px 10px;
+    }
+
+    label,
+    #download,
+    #title,
+    #artist,
+    #go,
+    #url {
+      font-size: 1.3em;
+    }
+
+    #url,
+    #title,
+    #artist {
+      border-radius: 4px 0px 0px 4px;
+      width: 30em;
+      text-align: left;
+      border: 2px solid #eeeeee;
+      background: #eeeeee;
+      outline: none;
+    }
+
+    #url:focus {
+      border: 2px solid #0485ff;
+    }
+
+    #go,
+    #download {
+      border-radius: 4px;
+      border: 2px solid #0485ff;
+      background: #0485ff;
+      color: white;
+    }
+
+    #thumb {
+      border-radius: 4px;
+      border: 2px solid black;
+    }
+
+    .inline {
+      display: inline-block;
+    }
+
+    #tagging {
+      display: none;
+    }
+
+    #myDiv {
+      padding-left: 10px;
+      vertical-align: top;
+    }
+  </style>
+
+  <body>
+    <h1>YouTube mp3 Downloader</h1>
+    <input
+      type="text"
+      id="url"
+      value="Video address"
+      onfocus="inputClicked()"
+      size="50"
+    />
+    <button id="go" onclick="sendURL()">Go!</button>
+    <h2 id="msg">&nbsp;</h2>
+    <div id="tagging">
+      <div class="inline">
+        <img id="thumb" src="" />
+      </div>
+      <div class="inline" id="myDiv">
+        <div>
+          <label for="artist">Artist:</label><br />
+          <input type="text" id="artist" value="" size="30" /><br /><br />
+          <label for="title">Title:</label><br />
+          <input type="text" id="title" value="" size="30" /><br /><br />
+          <input type="text" id="vidURL" value="" hidden />
+          <input type="text" id="vidID" value="" hidden />
+          <button id="download" onclick="getmp3()">Download</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var inputBox = document.getElementById("url");
+      var msg = document.getElementById("msg");
+      var thumb = document.getElementById("thumb");
+      var formArtist = document.getElementById("artist");
+      var formTitle = document.getElementById("title");
+      var formID = document.getElementById("vidID");
+      var formURL = document.getElementById("vidURL");
+      var tagDiv = document.getElementById("tagging");
+
+      function getTags(title, author) {
+        // Uses the video title to try to guess the tags.
+        var track;
+        var artist;
+        var end = title.indexOf("[");
+        if (end == -1) {
+          end = title.indexOf("(Official");
+        }
+        if (end == -1) {
+          end = title.indexOf("(Lyric");
+        }
+        if (end != -1) {
+          title = title.slice(0, end).trim();
+        }
+
+        var ind = title.indexOf(" --");
+        if (ind == -1) {
+          ind = title.indexOf(" - ");
+        }
+        if (ind != -1) {
+          track = title.slice(ind + 3).trim();
+          artist = title.slice(0, ind).trim();
+        } else {
+          track = title;
+          end = author.indexOf("- Topic");
+          if (end != -1) {
+            author = author.slice(0, end).trim();
+          }
+          artist = author;
+        }
+        return { track: track, artist: artist };
+      }
+
+      function showTags(id, title, author, url) {
+        thumb.src = "placeholder.png";
+        inputBox.value = "";
+        msg.innerHTML = "Change the tags if you like.";
+        tagDiv.style.display = "inline-block";
+        download.style.display = "inline-block";
+        setTimeout(() => {
+          thumb.src = id + ".jpg";
+        }, 500);
+        let tags = getTags(title, author);
+        formTitle.value = tags.track;
+        formID.value = id;
+        formURL.value = url;
+        formArtist.value = tags.artist;
+      }
+
+      function inputClicked() {
+        // Clear the message element & input box on focus.
+        msg.innerHTML = "&nbsp;";
+        inputBox.value = "";
+        tagDiv.style.display = "none";
+      }
+
+      function sendURL() {
+        // Send url to server and download the file.
+        msg.innerHTML = "Checking URL.";
+        let my_url = inputBox.value;
+        fetch("/video", {
+          method: "post",
+          body: JSON.stringify({ url: my_url }),
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+          },
+        })
+          .then((response) => response.json())
+          .then((json) => {
+            if (json.msg == -1) {
+              msg.innerHTML = "Invalid URL.";
+              return;
+            }
+            showTags(json.id, json.title, json.author, my_url);
+          })
+          .catch((err) => console.log(err));
+      }
+
+      function getmp3() {
+        let url = formURL.value;
+        let id = formID.value;
+        let title = formTitle.value;
+        let artist = formArtist.value;
+        msg.innerHTML = "Please wait.";
+        download.style.display = "none";
+
+        fetch("/mp3", {
+          method: "post",
+          body: JSON.stringify({
+            url: url,
+            id: id,
+            title: title,
+            artist: artist,
+          }),
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+          },
+        })
+          .then((response) => response.json())
+          .then((json) => {
+            if (json.msg == -1) {
+              msg.innerHTML = "Try another link please.";
+              return;
+            }
+            startDownload(json.id, json.track);
+          })
+          .catch((err) => console.log(err));
+      }
+
+      async function startDownload(id, file) {
+        msg.innerHTML = "Download starting.";
+        const song = await fetch("/download/" + id + ".mp3");
+        const blob = await song.blob();
+        const songURL = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = songURL;
+        anchor.download = file + ".mp3";
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(songURL);
+      }
+    </script>
+  </body>
+</html>
