@@ -37,7 +37,10 @@ function updateLog(artist, track) {
   const seconds = ('0' + dateOb.getSeconds()).slice(-2);
   const dateStr = `${date}-${month}-${year} ${hours}:${minutes}:${seconds}`;
   const msg = dateStr + ' ' + artist + ': ' + track;
-  db.collection('downloads').insertOne({text: msg}, (err, result) => {
+  db.collection('downloads').insertOne({text: msg}, (err) => {
+    if (err) {
+      console.log(err);
+    }
   });
 }
 
@@ -107,8 +110,8 @@ app.post('/mp3', (req, res) => {
 
   const filepath = path.join(__dirname, id + '.mp3');
   const thumb = path.join(__dirname, 'public', id + '.jpg');
-  const stream = ytdl(url, {quality: 'highestaudio'});
-  const writeStream = fs.createWriteStream(filepath);
+  const stream = ytdl(url, {highWaterMark: 1<<22, quality: 'highestaudio'});
+  const writeStream = fs.createWriteStream(filepath, {highWaterMark: 1<<22});
   const meta = {
     title: track,
     artist: artist,
@@ -140,12 +143,12 @@ app.get('/download/:id', function(req, res) {
   res.download(file);
   // Clean up files.
   setTimeout(function() {
-    fs.unlink(file, function(err, response) {
+    fs.unlink(file, function(err) {
       if (err) {
         console.log('Error deleting file.');
       }
     });
-    fs.unlink(thumb, function(err, response) {
+    fs.unlink(thumb, function(err) {
       if (err) {
         console.log('Error deleting file.');
       }
