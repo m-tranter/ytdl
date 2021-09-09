@@ -25,7 +25,6 @@ const uri = process.env.SECRET;
 const client = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
 const db = client.db('ytdl');
 
-
 /** Logging function */
 function updateLog(artist, track) {
   const dateOb = new Date();
@@ -157,6 +156,11 @@ app.get('/download/:id', function(req, res) {
 });
 
 app.get('/log', function(req, res) {
+  // console.log(req.query);
+  if (req.query.name !== 'mark') {
+    return res.send('You are not authorised to see this page.');
+  }
+
   db.collection('downloads').find().toArray((err, docs) => {
     if (err) {
       console.log(err);
@@ -165,4 +169,8 @@ app.get('/log', function(req, res) {
       res.end(msg);
     }
   });
+});
+
+app.all('*', function(req, res) {
+  res.status(404).send('Page not found.');
 });
