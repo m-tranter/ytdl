@@ -1,8 +1,9 @@
 
 /** Pads a number with a leading 0. */
 function pad(str) {
-  return ('0' + str).slice(-2);
+  return (`0${str}`).slice(-2);
 }
+
 /** Logging function */
 function logStr(artist, track) {
   const dateOb = new Date();
@@ -13,8 +14,7 @@ function logStr(artist, track) {
   const minutes = pad(dateOb.getMinutes());
   const seconds = pad(dateOb.getSeconds());
   const dateStr = `${date}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-  const msg = dateStr + ' ' + artist + ': ' + track;
-  return msg;
+  return `${dateStr} ${artist}: ${track}`;
 }
 
 

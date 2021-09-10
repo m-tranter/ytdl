@@ -160,7 +160,7 @@
         tagDiv.style.display = "inline-block";
         download.style.display = "inline-block";
         setTimeout(() => {
-          thumb.src = id + ".jpg";
+          thumb.src = `${id}.jpg`;
         }, 500);
         let tags = getTags(title, author);
         formTitle.value = tags.track;
@@ -187,12 +187,14 @@
             "Content-Type": "application/json; charset=utf-8",
           },
         })
-          .then((response) => response.json())
-          .then((json) => {
-            if (json.msg == -1) {
+          .then((response) => {
+            if (!response.ok) {
               msg.innerHTML = "Invalid URL.";
-              return;
+              throw Error("Bad URL");
             }
+            return response.json();
+          })
+          .then((json) => {
             showTags(json.id, json.title, json.author, my_url);
           })
           .catch((err) => console.log(err));
@@ -205,7 +207,6 @@
         let artist = formArtist.value;
         msg.innerHTML = "Please wait.";
         download.style.display = "none";
-
         fetch("/mp3", {
           method: "post",
           body: JSON.stringify({
@@ -218,12 +219,14 @@
             "Content-Type": "application/json; charset=utf-8",
           },
         })
-          .then((response) => response.json())
-          .then((json) => {
-            if (json.msg == -1) {
+          .then((response) => {
+            if (!response.ok) {
               msg.innerHTML = "Try another link please.";
-              return;
+              throw Error("Bad URL");
             }
+            return response.json();
+          })
+          .then((json) => {
             startDownload(json.id, json.track);
           })
           .catch((err) => console.log(err));
@@ -231,12 +234,12 @@
 
       async function startDownload(id, file) {
         msg.innerHTML = "Download starting.";
-        const song = await fetch("/download/" + id + ".mp3");
+        const song = await fetch(`/download/${id}.mp3`);
         const blob = await song.blob();
         const songURL = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = songURL;
-        anchor.download = file + ".mp3";
+        anchor.download = `${file}.mp3`;
         document.body.appendChild(anchor);
         anchor.click();
         document.body.removeChild(anchor);

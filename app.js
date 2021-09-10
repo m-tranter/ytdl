@@ -25,9 +25,11 @@ const {MongoClient} = require('mongodb');
 const uri = process.env.SECRET;
 const client = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
 const db = client.db('ytdl');
-let coll = 'onlineDownloads';
+var coll;
 if (port === 3000) {
   coll = 'downloads';
+} else {
+  coll = 'onlineDownloads';
 }
 
 // Start the server.
@@ -38,7 +40,9 @@ app.listen(port, () => {
 
 // Connect to the database
 client.connect((err) => {
-  if (err) return console.log(err);
+  if (err) { 
+    console.log('MongoDB failed to connect.');
+  }
 });
 
 // Middleware
@@ -48,13 +52,12 @@ app.use(express.json());
 // Routes
 app.post('/video', (req, res) => {
   // Try to get the video id and title and send to client.
-  let id;
   const url = req.body.url;
   // Check the URL first.
   try {
-    id = ytdl.getURLVideoID(url);
+    const id = ytdl.getURLVideoID(url);
     // Get the thumbnail into a buffer. Crop & save it.
-    const thumb = path.join(__dirname, 'public', id + '.jpg');
+    const thumb = path.join(__dirname, 'public', `${id}.jpg`);
     const thumbURL = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
     request({url: thumbURL, method: 'get', encoding: null}, (err, resp, buffer) => {
       const dims = sizeOf(buffer);
@@ -78,10 +81,10 @@ app.post('/video', (req, res) => {
           res.json({id: id, title: title, url: url, author: author});
         })
         .catch((err) => {
-          res.json({msg: -1});
+          res.status(400).end();
         });
   } catch (error) {
-    res.json({msg: -1});
+    res.status(400).end();
   }
 });
 
@@ -91,8 +94,8 @@ app.post('/mp3', (req, res) => {
   const url = req.body.url;
   const track = req.body.title;
   const artist = req.body.artist;
-  const filepath = path.join(__dirname, id + '.mp3');
-  const thumb = path.join(__dirname, 'public', id + '.jpg');
+  const filepath = path.join(__dirname, `${id}.mp3`);
+  const thumb = path.join(__dirname, 'public', `${id}.jpg`);
   const stream = ytdl(url, {highWaterMark: 1<<22, quality: 'highestaudio'});
   const writeStream = fs.createWriteStream(filepath, {highWaterMark: 1<<22});
   const meta = { title: track, artist: artist, APIC: thumb };
@@ -101,8 +104,8 @@ app.post('/mp3', (req, res) => {
       .format('mp3')
       .audioQuality(3)
       .on('error', function(err) {
-        console.log('Ffmpeg error: ' + err.message);
-        res.json({msg: -1});
+        console.log(`Ffmpeg error: ${err.message}`);
+          res.status(400).end();
       })
       .on('end', () => {
         const log = logStr(artist, track);
@@ -120,7 +123,7 @@ app.post('/mp3', (req, res) => {
 app.get('/download/:id', function(req, res) {
   // Route to provide download.
   const id = req.params.id;
-  const thumbName = id.slice(0, id.indexOf('.mp3')) + '.jpg';
+  const thumbName = `${id.slice(0, id.indexOf('.mp3'))}.jpg`;
   const thumb = path.join(__dirname, 'public', thumbName);
   const file = path.join(__dirname, id);
   res.download(file);
