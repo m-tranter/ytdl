@@ -12,6 +12,7 @@ const request = require('request');
 const sizeOf = require('image-size');
 const gm = require('gm');
 const dotenv = require('dotenv');
+const logStr = require('./logStr');
 dotenv.config();
 
 // Set some variables
@@ -24,23 +25,9 @@ const {MongoClient} = require('mongodb');
 const uri = process.env.SECRET;
 const client = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
 const db = client.db('ytdl');
-
-/** Logging function */
-function updateLog(artist, track) {
-  const dateOb = new Date();
-  const date = ('0' + dateOb.getDate()).slice(-2);
-  const month = ('0' + (dateOb.getMonth() + 1)).slice(-2);
-  const year = dateOb.getFullYear();
-  const hours = ('0' + dateOb.getHours()).slice(-2);
-  const minutes = ('0' + dateOb.getMinutes()).slice(-2);
-  const seconds = ('0' + dateOb.getSeconds()).slice(-2);
-  const dateStr = `${date}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-  const msg = dateStr + ' ' + artist + ': ' + track;
-  db.collection('downloads').insertOne({text: msg}, (err) => {
-    if (err) {
-      console.log(err);
-    }
-  });
+let coll = 'onlineDownloads';
+if (port === 3000) {
+  coll = 'downloads';
 }
 
 // Start the server.
@@ -66,7 +53,6 @@ app.post('/video', (req, res) => {
   // Check the URL first.
   try {
     id = ytdl.getURLVideoID(url);
-
     // Get the thumbnail into a buffer. Crop & save it.
     const thumb = path.join(__dirname, 'public', id + '.jpg');
     const thumbURL = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
@@ -82,14 +68,13 @@ app.post('/video', (req, res) => {
             }
           });
     });
-
     // Get the title of the video
     ytdl
         .getInfo(id)
         .then((info) => {
           const title = info.videoDetails.title;
           const author = info.videoDetails.author.name;
-          // Send the id, title and url to the client.
+          // Send video information to the client.
           res.json({id: id, title: title, url: url, author: author});
         })
         .catch((err) => {
@@ -106,16 +91,11 @@ app.post('/mp3', (req, res) => {
   const url = req.body.url;
   const track = req.body.title;
   const artist = req.body.artist;
-
   const filepath = path.join(__dirname, id + '.mp3');
   const thumb = path.join(__dirname, 'public', id + '.jpg');
   const stream = ytdl(url, {highWaterMark: 1<<22, quality: 'highestaudio'});
   const writeStream = fs.createWriteStream(filepath, {highWaterMark: 1<<22});
-  const meta = {
-    title: track,
-    artist: artist,
-    APIC: thumb,
-  };
+  const meta = { title: track, artist: artist, APIC: thumb };
   ffmpeg(stream)
       .audioCodec('libmp3lame')
       .format('mp3')
@@ -125,7 +105,12 @@ app.post('/mp3', (req, res) => {
         res.json({msg: -1});
       })
       .on('end', () => {
-        updateLog(artist, track);
+        const log = logStr(artist, track);
+        db.collection(coll).insertOne({text: log}, (err) => {
+          if (err) {
+            console.log(err);
+          }
+        });
         const tagsWritten = id3.write(meta, filepath);
         res.json({track: track, id: id});
       })
@@ -138,7 +123,6 @@ app.get('/download/:id', function(req, res) {
   const thumbName = id.slice(0, id.indexOf('.mp3')) + '.jpg';
   const thumb = path.join(__dirname, 'public', thumbName);
   const file = path.join(__dirname, id);
-
   res.download(file);
   // Clean up files.
   setTimeout(function() {
@@ -156,12 +140,10 @@ app.get('/download/:id', function(req, res) {
 });
 
 app.get('/log', function(req, res) {
-  // console.log(req.query);
   if (req.query.name !== 'mark') {
     return res.send('You are not authorised to see this page.');
   }
-
-  db.collection('downloads').find().toArray((err, docs) => {
+  db.collection(coll).find().toArray((err, docs) => {
     if (err) {
       console.log(err);
     } else {
