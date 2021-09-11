@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <h3>Log Page</h3>
+    <h4 id="msg">Enter password to see logs.</h4>
+    <div>
+      <input
+        type="password"
+        id="pword"
+        value=""
+        autocomplete="off"
+        size="15"
+        onfocus="inputClicked()"
+      />
+      <button id="auth" onclick="getLogs()">Submit</button>
+    </div>
+    <br />
+    <div id="logArea">
+      <pre id="logText"></pre>
+    </div>
+
+    <script>
+      let password = document.getElementById("pword");
+      let msg = document.getElementById("msg");
+      let logArea = document.getElementById("logArea");
+      let logText = document.getElementById("logText");
+
+      password.addEventListener("keyup", function (event) {
+        if (event.keyCode === 13) {
+          event.preventDefault();
+          msg.innerHTML = "&nbsp;";
+          document.getElementById("auth").click();
+        }
+      });
+
+      function inputClicked() {
+        // Clear the message element & input box on focus.
+        password.value = "";
+        logArea.style.display = "none";
+        logText.innerHTML = "";
+        msg.innerHTML = "Enter password to see logs.";
+      }
+
+      function getLogs() {
+        let pass = password.value;
+        inputClicked();
+        password.blur();
+        fetch("/log", {
+          method: "post",
+          body: JSON.stringify({ password: pass }),
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+          },
+        })
+          .then((response) => {
+            if (!response.ok) {
+              msg.innerHTML = "Invalid password.";
+              throw Error("Invalid password.");
+            }
+            return response.json();
+          })
+          .then((json) => {
+            // Display the log.
+            msg.innerHTML = "&nbsp;";
+            logText.innerHTML = json.log;
+            logArea.style.display = "inline-block";
+          })
+          .catch((err) => console.log(err));
+      }
+    </script>
+  </body>
+</html>

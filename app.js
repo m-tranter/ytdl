@@ -17,6 +17,7 @@ dotenv.config();
 
 // Set some variables
 const port = process.env.PORT || 3000;
+const pword = process.env.AUTH;
 const dir = path.join(__dirname, 'public');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -142,16 +143,16 @@ app.get('/download/:id', function(req, res) {
   }, 1000);
 });
 
-app.get('/log', function(req, res) {
-  if (req.query.name !== 'mark') {
-    return res.send('You are not authorised to see this page.');
+app.post('/log', function(req, res) {
+  if (req.body.password !== pword) {
+    return res.status(401).end();
   }
   db.collection(coll).find().toArray((err, docs) => {
     if (err) {
       console.log(err);
     } else {
       const msg = docs.map((elem) => elem.text).join('\n');
-      res.end(msg);
+      res.json({log: msg});
     }
   });
 });
