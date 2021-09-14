@@ -150,12 +150,10 @@ app.post('/log', function(req, res) {
       throw err;
     } else {
       if (!result) {
-        res.statusMessage = "User not found.";
-        return res.status(401).end();
+        return res.status(401).send({error: "User not found."});
       }
       if (req.body.password !== result.password) {
-        res.statusMessage = "Incorrect password.";
-        return res.status(401).end();
+        return res.status(401).send({error: "Incorrect password."});
       }
       db.collection(coll).find().toArray((err, docs) => {
         if (err) {

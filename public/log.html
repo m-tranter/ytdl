@@ -63,17 +63,17 @@
           },
         })
           .then((response) => {
-            if (!response.ok) {
-              msg.innerHTML = response.statusMessage;
-              throw Error(response.statusMessage);
+            if (response.status === 401) {
+              response.json().then((object) => {
+                msg.innerHTML = object.error;
+              });
+            } else if (response.status === 200) {
+              response.json().then((object) => {
+                msg.innerHTML = "&nbsp;";
+                logText.innerHTML = object.log;
+                logArea.style.display = "inline-block";
+              });
             }
-            response.json();
-          })
-          .then((json) => {
-            // Display the log.
-            msg.innerHTML = "&nbsp;";
-            logText.innerHTML = json.log;
-            logArea.style.display = "inline-block";
           })
           .catch((err) => console.log(err));
       }
