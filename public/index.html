@@ -41,6 +41,31 @@
       var formID = document.getElementById("vidID");
       var formURL = document.getElementById("vidURL");
       var tagDiv = document.getElementById("tagging");
+      var go = document.getElementById("go");
+
+      formArtist.addEventListener("keyup", function (event) {
+        if (event.keyCode === 13) {
+          event.preventDefault();
+          msg.innerHTML = "&nbsp;";
+          download.click();
+        }
+      });
+
+      formTitle.addEventListener("keyup", function (event) {
+        if (event.keyCode === 13) {
+          event.preventDefault();
+          msg.innerHTML = "&nbsp;";
+          download.click();
+        }
+      });
+
+      inputBox.addEventListener("keyup", function (event) {
+        if (event.keyCode === 13) {
+          event.preventDefault();
+          msg.innerHTML = "&nbsp;";
+          go.click();
+        }
+      });
 
       function getTags(title, author) {
         // Uses the video title to try to guess the tags.
@@ -81,6 +106,9 @@
         msg.innerHTML = "Change the tags if you like.";
         tagDiv.style.display = "inline-block";
         download.style.display = "inline-block";
+        formArtist.removeAttribute("disabled");
+        formTitle.removeAttribute("disabled");
+        formArtist.focus();
         setTimeout(() => {
           thumb.src = `${id}.jpg`;
         }, 500);
@@ -128,6 +156,8 @@
         let title = formTitle.value;
         let artist = formArtist.value;
         msg.innerHTML = "Please wait.";
+        formArtist.disabled = "true";
+        formTitle.disabled = "true";
         download.style.display = "none";
         fetch("/mp3", {
           method: "post",
@@ -166,7 +196,12 @@
         anchor.click();
         document.body.removeChild(anchor);
         URL.revokeObjectURL(songURL);
+        setTimeout(function () {
+          inputBox.focus();
+        }, 500);
       }
+
+      inputBox.focus();
     </script>
   </body>
 </html>

@@ -8,6 +8,9 @@
     <h3>Log Page</h3>
     <h4 id="msg">Enter password to see logs.</h4>
     <div>
+      <label for="user">User:</label><br />
+      <input type="text" id="user" value="" size="15" /><br />
+      <label for="pword">Password:</label><br />
       <input
         type="password"
         id="pword"
@@ -17,14 +20,16 @@
         onfocus="inputClicked()"
       />
       <button id="auth" onclick="getLogs()">Submit</button>
+      <br />
     </div>
     <br />
     <div id="logArea">
-      <pre id="logText"></pre>
+      <p id="logText"></p>
     </div>
 
     <script>
       let password = document.getElementById("pword");
+      let user = document.getElementById("user");
       let msg = document.getElementById("msg");
       let logArea = document.getElementById("logArea");
       let logText = document.getElementById("logText");
@@ -47,21 +52,22 @@
 
       function getLogs() {
         let pass = password.value;
+        let my_user = user.value;
         inputClicked();
         password.blur();
         fetch("/log", {
           method: "post",
-          body: JSON.stringify({ password: pass }),
+          body: JSON.stringify({ user: my_user, password: pass }),
           headers: {
             "Content-Type": "application/json; charset=utf-8",
           },
         })
           .then((response) => {
             if (!response.ok) {
-              msg.innerHTML = "Invalid password.";
-              throw Error("Invalid password.");
+              msg.innerHTML = response.statusMessage;
+              throw Error(response.statusMessage);
             }
-            return response.json();
+            response.json();
           })
           .then((json) => {
             // Display the log.

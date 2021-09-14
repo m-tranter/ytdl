@@ -144,15 +144,27 @@ app.get('/download/:id', function(req, res) {
 });
 
 app.post('/log', function(req, res) {
-  if (req.body.password !== pword) {
-    return res.status(401).end();
-  }
-  db.collection(coll).find().toArray((err, docs) => {
+  // Change this so that we look in the database first.
+  db.collection("users").findOne({name: req.body.user}, function(err, result) {
     if (err) {
-      console.log(err);
+      throw err;
     } else {
-      const msg = docs.map((elem) => elem.text).join('\n');
-      res.json({log: msg});
+      if (!result) {
+        res.statusMessage = "User not found.";
+        return res.status(401).end();
+      }
+      if (req.body.password !== result.password) {
+        res.statusMessage = "Incorrect password.";
+        return res.status(401).end();
+      }
+      db.collection(coll).find().toArray((err, docs) => {
+        if (err) {
+          console.log(err);
+        } else {
+          const msg = docs.map((elem) => elem.text).join('<br />');
+          res.json({log: msg});
+        }
+      });
     }
   });
 });
@@ -160,3 +172,15 @@ app.post('/log', function(req, res) {
 app.all('*', function(req, res) {
   res.status(404).send('Page not found.');
 });
+
+
+// Dummy function at the moment, need to check if user exists etc.
+function addUser(newUser, newPwd) {
+  db.collection("users").insertOne({name: newUser, password: newPwd}, (err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log("Wrote user & password.");
+    }
+  });
+}

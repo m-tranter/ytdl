@@ -36,12 +36,15 @@ h4 {
 
 #logArea {
   background-color: white;
-  border-color: white;
+  border-color: black;
+  border-width: 1px;
   display: none;
+  padding-left: 10px;
 }
 
 #logText {
-  font-size: 12px;
+  font-size: 18px;
+  overflow-wrap: break-word;
 }
 
 #go,
