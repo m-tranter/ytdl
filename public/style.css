@@ -55,6 +55,7 @@ h4 {
 
 label,
 #download,
+#swap,
 #title,
 #artist,
 #go,
@@ -84,6 +85,18 @@ label,
   border: 2px solid #0485ff;
   background: #0485ff;
   color: white;
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+#swap {
+  border-radius: 4px;
+  border: 2px solid Green;
+  color: white;
+  background: Green;
 }
 
 #thumb {

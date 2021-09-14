@@ -27,7 +27,10 @@
           <input type="text" id="title" value="" size="30" /><br /><br />
           <input type="text" id="vidURL" value="" hidden />
           <input type="text" id="vidID" value="" hidden />
+          <div class="buttons">
+          <button id="swap" onclick="swap()">Swap Tags</button>
           <button id="download" onclick="getmp3()">Download</button>
+          <div>
         </div>
       </div>
     </div>
@@ -42,6 +45,7 @@
       var formURL = document.getElementById("vidURL");
       var tagDiv = document.getElementById("tagging");
       var go = document.getElementById("go");
+      var swapBtn = document.getElementById("swap");
 
       formArtist.addEventListener("keyup", function (event) {
         if (event.keyCode === 13) {
@@ -66,6 +70,12 @@
           go.click();
         }
       });
+
+      function swap() {
+        let temp = formTitle.value;
+        formTitle.value = formArtist.value;
+        formArtist.value = temp;
+      }
 
       function getTags(title, author) {
         // Uses the video title to try to guess the tags.
@@ -105,6 +115,7 @@
         inputBox.value = "";
         msg.innerHTML = "Change the tags if you like.";
         tagDiv.style.display = "inline-block";
+        swapBtn.style.display = "inline-block";
         download.style.display = "inline-block";
         formArtist.removeAttribute("disabled");
         formTitle.removeAttribute("disabled");
@@ -159,6 +170,7 @@
         formArtist.disabled = "true";
         formTitle.disabled = "true";
         download.style.display = "none";
+        swapBtn.style.display = "none";
         fetch("/mp3", {
           method: "post",
           body: JSON.stringify({
