@@ -17,7 +17,6 @@ dotenv.config();
 
 // Set some variables
 const port = process.env.PORT || 3000;
-const pword = process.env.AUTH;
 const dir = path.join(__dirname, 'public');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
