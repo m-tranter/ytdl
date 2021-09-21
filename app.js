@@ -158,7 +158,7 @@ app.post('/log', function(req, res) {
         if (err) {
           console.log(err);
         } else {
-          const msg = docs.map((elem) => elem.text).join('<br />');
+          const msg = docs.reverse().map((elem) => elem.text).join('<br />');
           res.json({log: msg});
         }
       });
