@@ -15,7 +15,7 @@ h4 {
 h2,
 h4,
 #logArea {
-  width: 70%;
+  width: 90%;
   padding-bottom: 5px;
   font-size: 24px;
   background-color: powderblue;
@@ -36,7 +36,7 @@ h4 {
 
 #logArea {
   background-color: white;
-  font-size: 16px;
+  font-size: 14px;
   border-color: black;
   border-width: 1px;
   display: none;

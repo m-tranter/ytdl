@@ -77,8 +77,9 @@ app.post('/video', (req, res) => {
         .then((info) => {
           const title = info.videoDetails.title;
           const author = info.videoDetails.author.name;
+          const length = info.videoDetails.lengthSeconds;
           // Send video information to the client.
-          res.json({id: id, title: title, url: url, author: author});
+          res.json({id: id, title: title, url: url, author: author, length: length});
         })
         .catch((err) => {
           res.status(400).end();

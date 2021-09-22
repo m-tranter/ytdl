@@ -78,6 +78,26 @@
         formArtist.value = temp;
       }
 
+      /** Pads a number with a leading 0. */
+      function pad(str) {
+              return (`0${str}`).slice(-2);
+            }
+
+      function lengthStr(s) {
+              let msg = "Video length: ";
+              let hours;
+              let mins = Math.floor(s / 60);
+              let seconds = s - (mins * 60);
+              if (mins > 59) {
+                      hours = Math.floor(mins / 60);
+                      mins = mins - (hours * 60);
+                      msg += `${hours}:${pad(mins)}:${pad(seconds)}`;
+                    } else {
+                            msg += `${pad(mins)}:${pad(seconds)}`;
+                          }
+              return `${msg}&nbsp;&nbsp;&nbsp;&nbsp`;
+            }
+
       function getTags(title, author) {
         // Uses the video title to try to guess the tags.
         var track;
@@ -111,10 +131,11 @@
         return { track: track, artist: artist };
       }
 
-      function showTags(id, title, author, url) {
+      function showTags(id, title, author, url, length) {
         thumb.src = "placeholder.png";
-        inputBox.value = "";
-        msg.innerHTML = "Change the tags if you like.";
+              inputBox.value = "";
+              console.log(length);
+              msg.innerHTML = `${lengthStr(length)}Change the tags if you want.`;
         tagDiv.style.display = "inline-block";
         swapBtn.style.display = "inline-block";
         download.style.display = "inline-block";
@@ -157,7 +178,7 @@
             return response.json();
           })
           .then((json) => {
-            showTags(json.id, json.title, json.author, my_url);
+            showTags(json.id, json.title, json.author, my_url, json.length);
           })
           .catch((err) => console.log(err));
       }
