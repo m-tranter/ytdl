@@ -54,6 +54,14 @@ client.connect((err) => {
 app.use(express.static(dir));
 app.use(express.json());
 
+function timeToSecs (time) {
+  let h = Number(time.slice(0,2));
+  let m = Number(time.slice(3,5));
+  let s = Number(time.slice(6));
+  s  += m * 60 + h * 360;
+  return s;
+};
+
 // Routes
 app.post('/video', (req, res) => {
   // Try to get the video id and title and send to client.
@@ -171,10 +179,10 @@ app.post('/mp3', (req, res) => {
         res.status(400).end();
       })
     .on('codecData' , function(data) {
-      dur = Number(data.duration.slice(6));
+      dur = timeToSecs(data.duration);
     })
     .on('progress', function(progress) {
-      let time = Number(progress.timemark.slice(6));
+      let time = timeToSecs(progress.timemark);
       let percent = Math.ceil((time / dur) * 100);
       mp3Emitter.emit(`event${id}`, percent);
     })
