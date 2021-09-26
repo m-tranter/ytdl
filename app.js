@@ -15,15 +15,14 @@ const dotenv = require('dotenv');
 const logStr = require('./js/logStr');
 const randID = require('./js/id');
 const EventEmitter = require('events');
-var mp3Emitter;
-var videoEmitter;
-
 dotenv.config();
 
 // Set some variables
 const port = process.env.PORT || 3000;
 const dir = path.join(__dirname, 'public');
 ffmpeg.setFfmpegPath(ffmpegPath);
+var mp3Emitter;
+var videoEmitter;
 
 // MongoDB stuff
 const {MongoClient} = require('mongodb');
@@ -55,7 +54,6 @@ app.use(express.static(dir));
 app.use(express.json());
 
 // Routes
-
 app.post('/video', (req, res) => {
   // Try to get the video id and title and send to client.
   const url = req.body.url;
@@ -96,7 +94,7 @@ app.post('/video', (req, res) => {
   }
 });
 
-
+// Routes for progress bars.
 app.get('/:id/mp4Event/', async (req, res) => {
   videoEmitter = new EventEmitter;
   var id = req.params.id;
@@ -145,7 +143,7 @@ app.get('/:id/mp3Event', async (req, res) => {
 
 
 app.post('/mp3', (req, res) => {
-  // This route start the stream, extracts mp3 and adds the tags.
+  // This route starts the stream, extracts mp3 and adds the tags.
   const id = req.body.id;
   const url = req.body.url;
   const track = req.body.title;

@@ -222,7 +222,7 @@
                                             }
                                 };
 
-         
+                      // Progress bars.         
                       mp4EventSource = new EventSource(`/${id}/mp4Event`);
 
                       function getVidProgress () {
@@ -274,6 +274,7 @@
                     }
 
           async function startDownload(id, file) {
+                      msg.innerHTML = "&nbsp;";
                       const song = await fetch(`/download/${id}.mp3`);
                       const blob = await song.blob();
                       const songURL = URL.createObjectURL(blob);
