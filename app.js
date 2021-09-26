@@ -15,6 +15,8 @@ const dotenv = require('dotenv');
 const logStr = require('./js/logStr');
 const randID = require('./js/id');
 const EventEmitter = require('events');
+const ffmpegOnProgress = require('ffmpeg-on-progress');
+
 dotenv.config();
 
 // Set some variables
@@ -152,6 +154,12 @@ app.post('/mp3', (req, res) => {
   const audioPath = path.join(__dirname, `${id}.mp3`);
   const thumb = path.join(__dirname, 'public', `${id}.jpg`);
   const video = ytdl(url, {quality: 'highestaudio'});
+  // Helper for ffmpegOnProgress.
+  const logProgress = (progress, event) => {
+    let percent = Math.ceil(progress * 100);
+    mp3Emitter.emit(`event${id}`, percent);
+  };
+  var dur;
   video.pipe(fs.createWriteStream(videoPath));
   video.on('progress', (chunkLength, downloaded, total) => {
     const percent = Math.ceil((downloaded / total) * 100);
@@ -168,11 +176,10 @@ app.post('/mp3', (req, res) => {
         console.log(`Ffmpeg error: ${err.message}`);
         res.status(400).end();
       })
-    .on('progress', (progress) => {
-      let percent = Math.ceil(progress.percent);
-      console.log(progress);
-      mp3Emitter.emit(`event${id}`, percent);
+    .on('codecData' , function(data) {
+      dur = data.duration;
     })
+    .on('progress', ffmpegOnProgress(logProgress, dur))
       .on('end', () => {
         const log = logStr(artist, track);
         db.collection(coll).insertOne({text: log}, (err) => {
