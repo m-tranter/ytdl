@@ -175,7 +175,6 @@ app.post('/mp3', (req, res) => {
     })
     .on('progress', function(progress) {
       let time = Number(progress.timemark.slice(6));
-      console.log(time + " xxx " + dur);
       let percent = Math.ceil((time / dur) * 100);
       mp3Emitter.emit(`event${id}`, percent);
     })
