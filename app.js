@@ -1,5 +1,5 @@
-// My youtube downloader
-
+// My youtube downloade
+"use strict";
 // Modules
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
@@ -12,7 +12,12 @@ const request = require('request');
 const sizeOf = require('image-size');
 const gm = require('gm');
 const dotenv = require('dotenv');
-const logStr = require('./logStr');
+const logStr = require('./js/logStr');
+const randID = require('./js/id');
+const EventEmitter = require('events');
+var mp3Emitter;
+var videoEmitter;
+
 dotenv.config();
 
 // Set some variables
@@ -50,14 +55,16 @@ app.use(express.static(dir));
 app.use(express.json());
 
 // Routes
+
 app.post('/video', (req, res) => {
   // Try to get the video id and title and send to client.
   const url = req.body.url;
   // Check the URL first.
   try {
     const id = ytdl.getURLVideoID(url);
+    const uniqueId = id + randID(3);
     // Get the thumbnail into a buffer. Crop & save it.
-    const thumb = path.join(__dirname, 'public', `${id}.jpg`);
+    const thumb = path.join(__dirname, 'public', `${uniqueId}.jpg`);
     const thumbURL = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
     request({url: thumbURL, method: 'get', encoding: null}, (err, resp, buffer) => {
       const dims = sizeOf(buffer);
@@ -79,7 +86,7 @@ app.post('/video', (req, res) => {
           const author = info.videoDetails.author.name;
           const length = info.videoDetails.lengthSeconds;
           // Send video information to the client.
-          res.json({id: id, title: title, url: url, author: author, length: length});
+          res.json({id: uniqueId, title: title, url: url, author: author, length: length});
         })
         .catch((err) => {
           res.status(400).end();
@@ -89,25 +96,84 @@ app.post('/video', (req, res) => {
   }
 });
 
+
+app.get('/:id/mp4Event/', async (req, res) => {
+  videoEmitter = new EventEmitter;
+  var id = req.params.id;
+
+  function mp4Update(data) {
+    const percent = JSON.stringify(data);
+    res.write(`event: progress${id}\n`);
+    res.write('data: ' + percent);
+    res.write('\n\n');
+    if (data == 100) {
+      res.end();
+      videoEmitter.removeListener(`event${id}`, mp4Update);
+    };
+  };
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+  videoEmitter.on(`event${id}`, mp4Update); 
+});
+
+
+app.get('/:id/mp3Event', async (req, res) => {
+  mp3Emitter = new EventEmitter;
+  var id = req.params.id;
+  function mp3Update(data) {
+    const percent = JSON.stringify(data);
+    res.write(`event: progress${id}\n`);
+    res.write('data: ' + percent);
+    res.write('\n\n');
+    if (data == 100) {
+      res.end();
+      mp3Emitter.removeListener(`event${id}`, mp3Update);
+    };
+  };
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+
+  mp3Emitter.on(`event${id}`, mp3Update);
+});
+
+
 app.post('/mp3', (req, res) => {
   // This route start the stream, extracts mp3 and adds the tags.
   const id = req.body.id;
   const url = req.body.url;
   const track = req.body.title;
   const artist = req.body.artist;
-  const filepath = path.join(__dirname, `${id}.mp3`);
+  const videoPath = path.join(__dirname, `${id}.mp4`);
+  const audioPath = path.join(__dirname, `${id}.mp3`);
   const thumb = path.join(__dirname, 'public', `${id}.jpg`);
-  const stream = ytdl(url, {highWaterMark: 1<<22, quality: 'highestaudio'});
-  const writeStream = fs.createWriteStream(filepath, {highWaterMark: 1<<22});
-  const meta = { title: track, artist: artist, APIC: thumb };
-  ffmpeg(stream)
+  const video = ytdl(url, {quality: 'highestaudio'});
+  video.pipe(fs.createWriteStream(videoPath));
+  video.on('progress', (chunkLength, downloaded, total) => {
+    const percent = Math.ceil((downloaded / total) * 100);
+    videoEmitter.emit(`event${id}`, percent);
+  });
+  video.on('end', () => {
+    const writeStream = fs.createWriteStream(audioPath);
+    const meta = { title: track, artist: artist, album: "YouTube", APIC: thumb };
+    ffmpeg(videoPath)
       .audioCodec('libmp3lame')
       .format('mp3')
       .audioQuality(3)
       .on('error', function(err) {
         console.log(`Ffmpeg error: ${err.message}`);
-          res.status(400).end();
+        res.status(400).end();
       })
+    .on('progress', (progress) => {
+      let percent = Math.ceil(progress.percent);
+      mp3Emitter.emit(`event${id}`, percent);
+    })
       .on('end', () => {
         const log = logStr(artist, track);
         db.collection(coll).insertOne({text: log}, (err) => {
@@ -115,21 +181,29 @@ app.post('/mp3', (req, res) => {
             console.log(err);
           }
         });
-        const tagsWritten = id3.write(meta, filepath);
+        const tagsWritten = id3.write(meta, audioPath);
         res.json({track: track, id: id});
       })
       .pipe(writeStream, {end: true});
+  });
 });
 
 app.get('/download/:id', function(req, res) {
   // Route to provide download.
   const id = req.params.id;
+  const vidName = `${id.slice(0, id.indexOf('.mp3'))}.mp4`;
   const thumbName = `${id.slice(0, id.indexOf('.mp3'))}.jpg`;
   const thumb = path.join(__dirname, 'public', thumbName);
   const file = path.join(__dirname, id);
+  const video = path.join(__dirname, vidName);
   res.download(file);
   // Clean up files.
   setTimeout(function() {
+    fs.unlink(video, function(err) {
+      if (err) {
+        console.log('Error deleting file.');
+      }
+    });
     fs.unlink(file, function(err) {
       if (err) {
         console.log('Error deleting file.');

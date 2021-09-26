@@ -1,4 +1,5 @@
 
+"use strict";
 /** Pads a number with a leading 0. */
 function pad(str) {
   return (`0${str}`).slice(-2);

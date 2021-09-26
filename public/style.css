@@ -2,6 +2,26 @@ body {
   background-color: Wheat;
 }
 
+#progress,
+#container {
+  width: 100%;
+  border-style: solid;
+  border-color: black;
+  border-width: 1px;
+  border-radius: 5px;
+  background-color: LightGrey;
+}
+
+#container {
+  background-color: wheat;
+  display: none;
+}
+
+#bar {
+  width: 0%;
+  height: 30px;
+}
+
 h1,
 h2,
 h3,
@@ -9,24 +29,19 @@ h4 {
   color: Navy;
   font-family: "Comic Sans MS";
   text-align: center;
-  font-size: 36px;
+  font-size: 24px;
 }
 
 h2,
 h4,
 #logArea {
-  width: 90%;
+  width: 100%;
   padding-bottom: 5px;
-  font-size: 24px;
   background-color: powderblue;
   border-radius: 10px;
   border-style: solid;
   border-color: powderblue;
   border-width: 2px;
-}
-
-h3 {
-  font-size: 24px;
 }
 
 h4 {
@@ -36,7 +51,7 @@ h4 {
 
 #logArea {
   background-color: white;
-  font-size: 14px;
+  font-size: 12px;
   border-color: black;
   border-width: 1px;
   display: none;
@@ -110,6 +125,10 @@ label,
 
 #tagging {
   display: none;
+}
+
+#msg {
+  vertical-align: middle;
 }
 
 #myDiv {

@@ -7,14 +7,20 @@
   <body>
     <h1>YouTube mp3 Downloader</h1>
     <input
-      type="text"
-      id="url"
-      value="Video address"
-      onfocus="inputClicked()"
-      size="50"
-    />
+        type="text"
+        id="url"
+        value="Video address"
+        onfocus="inputClicked()"
+        size="50"
+        />
     <button id="go" onclick="sendURL()">Go!</button>
     <h2 id="msg">&nbsp;</h2>
+    <div id="container">
+      <div id="progress">
+        <div id="bar"></div>
+      </div>
+    </div>
+    </br></br>
     <div id="tagging">
       <div class="inline">
         <img id="thumb" src="" />
@@ -28,214 +34,259 @@
           <input type="text" id="vidURL" value="" hidden />
           <input type="text" id="vidID" value="" hidden />
           <div class="buttons">
-          <button id="swap" onclick="swap()">Swap Tags</button>
-          <button id="download" onclick="getmp3()">Download</button>
-          <div>
+            <button id="swap" onclick="swap()">Swap Tags</button>
+            <button id="download" onclick="getmp3()">Download</button>
+            <div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <script>
-      "use strict";
-      var inputBox = document.getElementById("url");
-      var msg = document.getElementById("msg");
-      var thumb = document.getElementById("thumb");
-      var formArtist = document.getElementById("artist");
-      var formTitle = document.getElementById("title");
-      var formID = document.getElementById("vidID");
-      var formURL = document.getElementById("vidURL");
-      var tagDiv = document.getElementById("tagging");
-      var go = document.getElementById("go");
-      var swapBtn = document.getElementById("swap");
+        <script>
+          "use strict";
+          var inputBox = document.getElementById("url");
+          var msg = document.getElementById("msg");
+          var thumb = document.getElementById("thumb");
+          var formArtist = document.getElementById("artist");
+          var formTitle = document.getElementById("title");
+          var formID = document.getElementById("vidID");
+          var formURL = document.getElementById("vidURL");
+          var tagDiv = document.getElementById("tagging");
+          var go = document.getElementById("go");
+          var swapBtn = document.getElementById("swap");
+          var bar = document.getElementById("bar");
+          var container = document.getElementById("container");
+          var mp3EventSource;
+          var mp4EventSource;
 
-      formArtist.addEventListener("keyup", function (event) {
-        if (event.keyCode === 13) {
-          event.preventDefault();
-          msg.innerHTML = "&nbsp;";
-          download.click();
-        }
-      });
 
-      formTitle.addEventListener("keyup", function (event) {
-        if (event.keyCode === 13) {
-          event.preventDefault();
-          msg.innerHTML = "&nbsp;";
-          download.click();
-        }
-      });
+          formArtist.addEventListener("keyup", function (event) {
+                      if (event.keyCode === 13) {
+                                  event.preventDefault();
+                                  msg.innerHTML = "&nbsp;";
+                                  download.click();
+                                }
+                    });
 
-      inputBox.addEventListener("keyup", function (event) {
-        if (event.keyCode === 13) {
-          event.preventDefault();
-          msg.innerHTML = "&nbsp;";
-          go.click();
-        }
-      });
+          formTitle.addEventListener("keyup", function (event) {
+                      if (event.keyCode === 13) {
+                                  event.preventDefault();
+                                  msg.innerHTML = "&nbsp;";
+                                  download.click();
+                                }
+                    });
 
-      function swap() {
-        let temp = formTitle.value;
-        formTitle.value = formArtist.value;
-        formArtist.value = temp;
-      }
+          inputBox.addEventListener("keyup", function (event) {
+                      if (event.keyCode === 13) {
+                                  event.preventDefault();
+                                  msg.innerHTML = "&nbsp;";
+                                  go.click();
+                                }
+                    });
 
-      /** Pads a number with a leading 0. */
-      function pad(str) {
-              return (`0${str}`).slice(-2);
-            }
+          function swap() {
+                      let temp = formTitle.value;
+                      formTitle.value = formArtist.value;
+                      formArtist.value = temp;
+                    }
 
-      function lengthStr(s) {
-              let msg = "Video length: ";
-              let hours;
-              let mins = Math.floor(s / 60);
-              let seconds = s - (mins * 60);
-              if (mins > 59) {
-                      hours = Math.floor(mins / 60);
-                      mins = mins - (hours * 60);
-                      msg += `${hours}:${pad(mins)}:${pad(seconds)}`;
-                    } else {
-                            msg += `${pad(mins)}:${pad(seconds)}`;
-                          }
-              return `${msg}&nbsp;&nbsp;&nbsp;&nbsp`;
-            }
+          /** Pads a number with a leading 0. */
+          function pad(str) {
+                      return (`0${str}`).slice(-2);
+                    }
 
-      function getTags(title, author) {
-        // Uses the video title to try to guess the tags.
-        var track;
-        var artist;
-        var end = title.indexOf("[");
-        if (end == -1) {
-          end = title.indexOf("(Official");
-        }
-        if (end == -1) {
-          end = title.indexOf("(Lyric");
-        }
-        if (end != -1) {
-          title = title.slice(0, end).trim();
-        }
+          function lengthStr(s) {
+                      let msg = "Video length: ";
+                      let hours;
+                      let mins = Math.floor(s / 60);
+                      let seconds = s - (mins * 60);
+                      if (mins > 59) {
+                                  hours = Math.floor(mins / 60);
+                                  mins = mins - (hours * 60);
+                                  msg += `${hours}:${pad(mins)}:${pad(seconds)}`;
+                                } else {
+                                            msg += `${pad(mins)}:${pad(seconds)}`;
+                                          }
+                      return `${msg}&nbsp;&nbsp;&nbsp;&nbsp`;
+                    }
 
-        var ind = title.indexOf(" --");
-        if (ind == -1) {
-          ind = title.indexOf(" - ");
-        }
-        if (ind != -1) {
-          track = title.slice(ind + 3).trim();
-          artist = title.slice(0, ind).trim();
-        } else {
-          track = title;
-          end = author.indexOf("- Topic");
-          if (end != -1) {
-            author = author.slice(0, end).trim();
-          }
-          artist = author;
-        }
-        return { track: track, artist: artist };
-      }
+          function getTags(title, author) {
+                      // Uses the video title to try to guess the tags.
+                      var track;
+                      var artist;
+                      var end = title.indexOf("[");
+                      if (end == -1) {
+                                  end = title.indexOf("(Official");
+                                }
+                      if (end == -1) {
+                                  end = title.indexOf("(Lyric");
+                                }
+                      if (end != -1) {
+                                  title = title.slice(0, end).trim();
+                                }
 
-      function showTags(id, title, author, url, length) {
-        thumb.src = "placeholder.png";
-              inputBox.value = "";
-              console.log(length);
-              msg.innerHTML = `${lengthStr(length)}Change the tags if you want.`;
-        tagDiv.style.display = "inline-block";
-        swapBtn.style.display = "inline-block";
-        download.style.display = "inline-block";
-        formArtist.removeAttribute("disabled");
-        formTitle.removeAttribute("disabled");
-        formArtist.focus();
-        setTimeout(() => {
-          thumb.src = `${id}.jpg`;
-        }, 500);
-        let tags = getTags(title, author);
-        formTitle.value = tags.track;
-        formID.value = id;
-        formURL.value = url;
-        formArtist.value = tags.artist;
-      }
+                      var ind = title.indexOf(" --");
+                      if (ind == -1) {
+                                  ind = title.indexOf(" - ");
+                                }
+                      if (ind != -1) {
+                                  track = title.slice(ind + 3).trim();
+                                  artist = title.slice(0, ind).trim();
+                                } else {
+                                            track = title;
+                                            end = author.indexOf("- Topic");
+                                            if (end != -1) {
+                                                        author = author.slice(0, end).trim();
+                                                      }
+                                            artist = author;
+                                          }
+                      return { track: track, artist: artist };
+                    }
 
-      function inputClicked() {
-        // Clear the message element & input box on focus.
-        msg.innerHTML = "&nbsp;";
-        inputBox.value = "";
-        tagDiv.style.display = "none";
-      }
 
-      function sendURL() {
-        // Send url to server and download the file.
-        msg.innerHTML = "Checking URL.";
-        let my_url = inputBox.value;
-        fetch("/video", {
-          method: "post",
-          body: JSON.stringify({ url: my_url }),
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-          },
-        })
-          .then((response) => {
-            if (!response.ok) {
-              msg.innerHTML = "Invalid URL.";
-              throw Error("Bad URL");
-            }
-            return response.json();
-          })
-          .then((json) => {
-            showTags(json.id, json.title, json.author, my_url, json.length);
-          })
-          .catch((err) => console.log(err));
-      }
 
-      function getmp3() {
-        let url = formURL.value;
-        let id = formID.value;
-        let title = formTitle.value;
-        let artist = formArtist.value;
-        msg.innerHTML = "Please wait.";
-        formArtist.disabled = "true";
-        formTitle.disabled = "true";
-        download.style.display = "none";
-        swapBtn.style.display = "none";
-        fetch("/mp3", {
-          method: "post",
-          body: JSON.stringify({
-            url: url,
-            id: id,
-            title: title,
-            artist: artist,
-          }),
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-          },
-        })
-          .then((response) => {
-            if (!response.ok) {
-              msg.innerHTML = "Try another link please.";
-              throw Error("Bad URL");
-            }
-            return response.json();
-          })
-          .then((json) => {
-            startDownload(json.id, json.track);
-          })
-          .catch((err) => console.log(err));
-      }
+          function showTags(id, title, author, url, length) {
+                      thumb.src = "placeholder.png";
+                      inputBox.value = "";
+                      msg.innerHTML = `${lengthStr(length)}Change the tags if you want.`;
+                      tagDiv.style.display = "inline-block";
+                      swapBtn.style.display = "inline-block";
+                      download.style.display = "inline-block";
+                      formArtist.removeAttribute("disabled");
+                      formTitle.removeAttribute("disabled");
+                      formArtist.focus();
+                      setTimeout(() => {
+                                  thumb.src = `${id}.jpg`;
+                                }, 500);
+                      let tags = getTags(title, author);
+                      formTitle.value = tags.track;
+                      formID.value = id;
+                      formURL.value = url;
+                      formArtist.value = tags.artist;
+                    }
 
-      async function startDownload(id, file) {
-        msg.innerHTML = "Download starting.";
-        const song = await fetch(`/download/${id}.mp3`);
-        const blob = await song.blob();
-        const songURL = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = songURL;
-        anchor.download = `${file}.mp3`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        document.body.removeChild(anchor);
-        URL.revokeObjectURL(songURL);
-        setTimeout(function () {
+          function inputClicked() {
+                      // Clear the message element & input box on focus.
+                      msg.innerHTML = "&nbsp;";
+                      inputBox.value = "";
+                      container.style.display = "none";
+                      tagDiv.style.display = "none";
+                    }
+
+          function sendURL() {
+                      // Send url to server and download the file.
+                      msg.innerHTML = "Checking URL.";
+                      let my_url = inputBox.value;
+                      fetch("/video", {
+                                  method: "post",
+                                  body: JSON.stringify({ url: my_url }),
+                                  headers: {
+                                              "Content-Type": "application/json; charset=utf-8",
+                                            },
+                                })
+                        .then((response) => {
+                                    if (!response.ok) {
+                                                msg.innerHTML = "Invalid URL.";
+                                                throw Error("Bad URL");
+                                              }
+                                    return response.json();
+                                  })
+                        .then((json) => {
+                                    showTags(json.id, json.title, json.author, my_url, json.length);
+                                  })
+                        .catch((err) => console.log(err));
+                    }
+
+          function getmp3() {
+                      let url = formURL.value;
+                      let id = formID.value;
+
+                      // Function to listen for progress info.
+                      const updateMp3Data = (progressEvent) => {
+                                  const prog = JSON.parse(progressEvent.data);
+                                  bar.style.width = `${prog}%`;
+                                  // Finish if it is 100%
+                                  if (prog ==100) {
+                                              mp3EventSource.close();
+                                            }
+                                };
+                      const updateMp4Data = (progressEvent) => {
+                                  const prog = JSON.parse(progressEvent.data);
+                                  bar.style.width = `${prog}%`;
+                                  // Finish if it is 100%
+                                  if (prog ==100) {
+                                              bar.style.backgroundColor = "Green";
+                                              bar.style.width = "0";
+                                              msg.innerHTML = "Converting to mp3.";
+                                              getMp3Progress();
+                                              mp4EventSource.close();
+                                            }
+                                };
+
+         
+                      mp4EventSource = new EventSource(`/${id}/mp4Event`);
+
+                      function getVidProgress () {
+                                  mp4EventSource.addEventListener(`progress${id}`, updateMp4Data);
+                                  return () => mp4EventSource.close();
+                                };
+
+                      mp3EventSource = new EventSource(`/${id}/mp3Event`);
+
+                      function getMp3Progress () {
+                                  mp3EventSource.addEventListener(`progress${id}`, updateMp3Data);
+                                  return () => mp3EventSource.close();
+                                };
+
+                      let title = formTitle.value;
+                      let artist = formArtist.value;
+                      bar.style.backgroundColor = "Blue";
+                      bar.style.width = "0%";
+                      msg.innerHTML = "Fetching video.";
+                      formArtist.disabled = "true";
+                      formTitle.disabled = "true";
+                      download.style.display = "none";
+                      swapBtn.style.display = "none";
+                      container.style.display = "inline-block";
+                      fetch("/mp3", {
+                                  method: "post",
+                                  body: JSON.stringify({
+                                              url: url,
+                                              id: id,
+                                              title: title,
+                                              artist: artist,
+                                            }),
+                                  headers: {
+                                              "Content-Type": "application/json; charset=utf-8",
+                                            },
+                                })
+                        .then((response) => {
+                                    if (!response.ok) {
+                                                msg.innerHTML = "Try another link please.";
+                                                throw Error("Bad URL");
+                                              }
+                                    return response.json();
+                                  })
+                        .then((json) => {
+                                    startDownload(json.id, json.track);
+                                  })
+                        .catch((err) => console.log(err));
+                      getVidProgress();
+                    }
+
+          async function startDownload(id, file) {
+                      const song = await fetch(`/download/${id}.mp3`);
+                      const blob = await song.blob();
+                      const songURL = URL.createObjectURL(blob);
+                      const anchor = document.createElement("a");
+                      anchor.href = songURL;
+                      anchor.download = `${file}.mp3`;
+                      document.body.appendChild(anchor);
+                      anchor.click();
+                      document.body.removeChild(anchor);
+                      URL.revokeObjectURL(songURL);
+                    }
+
           inputBox.focus();
-        }, 500);
-      }
-
-      inputBox.focus();
-    </script>
+        </script>
   </body>
 </html>
