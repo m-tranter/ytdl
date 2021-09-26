@@ -205,7 +205,7 @@
                                   const prog = JSON.parse(progressEvent.data);
                                   bar.style.width = `${prog}%`;
                                   // Finish if it is 100%
-                                  if (prog ==100) {
+                                  if (prog == 100) {
                                               mp3EventSource.close();
                                             }
                                 };
@@ -213,7 +213,7 @@
                                   const prog = JSON.parse(progressEvent.data);
                                   bar.style.width = `${prog}%`;
                                   // Finish if it is 100%
-                                  if (prog ==100) {
+                                  if (prog == 100) {
                                               bar.style.backgroundColor = "Green";
                                               bar.style.width = "0";
                                               msg.innerHTML = "Converting to mp3.";

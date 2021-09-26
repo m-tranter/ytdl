@@ -170,6 +170,7 @@ app.post('/mp3', (req, res) => {
       })
     .on('progress', (progress) => {
       let percent = Math.ceil(progress.percent);
+      console.log(progress);
       mp3Emitter.emit(`event${id}`, percent);
     })
       .on('end', () => {
