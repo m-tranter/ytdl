@@ -15,7 +15,6 @@ const dotenv = require('dotenv');
 const logStr = require('./js/logStr');
 const randID = require('./js/id');
 const EventEmitter = require('events');
-const ffmpegOnProgress = require('ffmpeg-on-progress');
 
 dotenv.config();
 
@@ -154,12 +153,6 @@ app.post('/mp3', (req, res) => {
   const audioPath = path.join(__dirname, `${id}.mp3`);
   const thumb = path.join(__dirname, 'public', `${id}.jpg`);
   const video = ytdl(url, {quality: 'highestaudio'});
-  // Helper for ffmpegOnProgress.
-  const logProgress = (progress, event) => {
-    let percent = Math.ceil(progress * 100);
-    console.log(progress + "in Log Progress");
-    mp3Emitter.emit(`event${id}`, percent);
-  };
   var dur;
   video.pipe(fs.createWriteStream(videoPath));
   video.on('progress', (chunkLength, downloaded, total) => {
@@ -178,10 +171,14 @@ app.post('/mp3', (req, res) => {
         res.status(400).end();
       })
     .on('codecData' , function(data) {
-      dur = data.duration;
-      console.log(dur);
+      dur = Number(data.duration.slice(6));
     })
-    .on('progress', ffmpegOnProgress(logProgress, dur))
+    .on('progress', function(progress) {
+      let time = Number(progress.timemark.slice(6));
+      console.log(time + " xxx " + dur);
+      let percent = Math.ceil((time / dur) * 100);
+      mp3Emitter.emit(`event${id}`, percent);
+    })
       .on('end', () => {
         const log = logStr(artist, track);
         db.collection(coll).insertOne({text: log}, (err) => {
