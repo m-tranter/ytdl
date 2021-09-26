@@ -157,6 +157,7 @@ app.post('/mp3', (req, res) => {
   // Helper for ffmpegOnProgress.
   const logProgress = (progress, event) => {
     let percent = Math.ceil(progress * 100);
+    console.log(percent);
     mp3Emitter.emit(`event${id}`, percent);
   };
   var dur;
@@ -178,6 +179,7 @@ app.post('/mp3', (req, res) => {
       })
     .on('codecData' , function(data) {
       dur = data.duration;
+      console.log(dur);
     })
     .on('progress', ffmpegOnProgress(logProgress, dur))
       .on('end', () => {
