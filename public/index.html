@@ -83,6 +83,7 @@
                                 }
                     });
 
+          /** Swap artist & title fields. */
           function swap() {
                       let temp = formTitle.value;
                       formTitle.value = formArtist.value;
@@ -94,6 +95,7 @@
                       return (`0${str}`).slice(-2);
                     }
 
+          /** Human-friendly video length. */
           function lengthStr(s) {
                       let msg = "Video length: ";
                       let hours;
@@ -109,8 +111,8 @@
                       return `${msg}&nbsp;&nbsp;&nbsp;&nbsp`;
                     }
 
+          /** Uses the video title to try to guess the tags. */
           function getTags(title, author) {
-                      // Uses the video title to try to guess the tags.
                       var track;
                       var artist;
                       var end = title.indexOf("[");
@@ -143,7 +145,7 @@
                     }
 
 
-
+          /** Display the tags and allow editing. */
           function showTags(id, title, author, url, length) {
                       thumb.src = "placeholder.png";
                       inputBox.value = "";
@@ -164,16 +166,16 @@
                       formArtist.value = tags.artist;
                     }
 
+          /** Clear the message element & input box on focus. */
           function inputClicked() {
-                      // Clear the message element & input box on focus.
                       msg.innerHTML = "&nbsp;";
                       inputBox.value = "";
                       container.style.display = "none";
                       tagDiv.style.display = "none";
                     }
 
+          /** Send url to server and get information back. */
           function sendURL() {
-                      // Send url to server and download the file.
                       msg.innerHTML = "Checking URL.";
                       let my_url = inputBox.value;
                       fetch("/video", {
@@ -196,6 +198,7 @@
                         .catch((err) => console.log(err));
                     }
 
+          /** Tell server to download the video and convert to mp3. */
           function getmp3() {
                       let url = formURL.value;
                       let id = formID.value;
@@ -209,6 +212,7 @@
                                               mp3EventSource.close();
                                             }
                                 };
+
                       const updateMp4Data = (progressEvent) => {
                                   const prog = JSON.parse(progressEvent.data);
                                   bar.style.width = `${prog}%`;
@@ -224,14 +228,12 @@
 
                       // Progress bars.         
                       mp4EventSource = new EventSource(`/${id}/mp4Event`);
-
                       function getVidProgress () {
                                   mp4EventSource.addEventListener(`progress${id}`, updateMp4Data);
                                   return () => mp4EventSource.close();
                                 };
 
                       mp3EventSource = new EventSource(`/${id}/mp3Event`);
-
                       function getMp3Progress () {
                                   mp3EventSource.addEventListener(`progress${id}`, updateMp3Data);
                                   return () => mp3EventSource.close();
@@ -261,6 +263,8 @@
                                 })
                         .then((response) => {
                                     if (!response.ok) {
+                                                mp3EventSource = undefined;
+                                                mp4EventSource = undefined;
                                                 msg.innerHTML = "Try another link please.";
                                                 throw Error("Bad URL");
                                               }
@@ -273,6 +277,7 @@
                       getVidProgress();
                     }
 
+          /** Trigger the download. */
           async function startDownload(id, file) {
                       msg.innerHTML = "&nbsp;";
                       const song = await fetch(`/download/${id}.mp3`);
@@ -287,6 +292,7 @@
                       URL.revokeObjectURL(songURL);
                     }
 
+          /** Focus on the input box on load. */
           inputBox.focus();
         </script>
   </body>

@@ -1,5 +1,7 @@
-// My youtube downloade
+// My youtube downloader
+
 "use strict";
+
 // Modules
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
@@ -16,9 +18,8 @@ const logStr = require('./js/logStr');
 const randID = require('./js/id');
 const EventEmitter = require('events');
 
-dotenv.config();
-
 // Set some variables
+dotenv.config();
 const port = process.env.PORT || 3000;
 const dir = path.join(__dirname, 'public');
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -54,6 +55,7 @@ client.connect((err) => {
 app.use(express.static(dir));
 app.use(express.json());
 
+/** Turns the time-stamps into seconds as a number. */
 function timeToSecs (time) {
   let h = Number(time.slice(0,2));
   let m = Number(time.slice(3,5));
@@ -77,37 +79,38 @@ app.post('/video', (req, res) => {
       const dims = sizeOf(buffer);
       const newLen = dims.height * 0.75;
       gm(buffer)
-          .gravity('Center')
-          .crop(newLen, newLen)
-          .write(thumb, (err) => {
-            if (err) {
-              console.log(err);
-            }
-          });
+        .gravity('Center')
+        .crop(newLen, newLen)
+        .write(thumb, (err) => {
+          if (err) {
+            console.log(err);
+          }
+        });
     });
     // Get the title of the video
     ytdl
-        .getInfo(id)
-        .then((info) => {
-          const title = info.videoDetails.title;
-          const author = info.videoDetails.author.name;
-          const length = info.videoDetails.lengthSeconds;
-          // Send video information to the client.
-          res.json({id: uniqueId, title: title, url: url, author: author, length: length});
-        })
-        .catch((err) => {
-          res.status(400).end();
-        });
+      .getInfo(id)
+      .then((info) => {
+        const title = info.videoDetails.title;
+        const author = info.videoDetails.author.name;
+        const length = info.videoDetails.lengthSeconds;
+        // Send video information to the client.
+        res.json({id: uniqueId, title: title, url: url, author: author, length: length});
+      })
+      .catch((err) => {
+        res.status(400).end();
+      });
   } catch (error) {
     res.status(400).end();
   }
 });
 
-// Routes for progress bars.
+// Route for mp4 progress bar.
 app.get('/:id/mp4Event/', async (req, res) => {
   videoEmitter = new EventEmitter;
   var id = req.params.id;
 
+  /** Function to send progress data (mp4). */
   function mp4Update(data) {
     const percent = JSON.stringify(data);
     res.write(`event: progress${id}\n`);
@@ -127,9 +130,12 @@ app.get('/:id/mp4Event/', async (req, res) => {
 });
 
 
+// Route for mp3 progress bar.
 app.get('/:id/mp3Event', async (req, res) => {
   mp3Emitter = new EventEmitter;
   var id = req.params.id;
+
+  /** Function to send progress data (mp3). */
   function mp3Update(data) {
     const percent = JSON.stringify(data);
     res.write(`event: progress${id}\n`);
@@ -140,7 +146,6 @@ app.get('/:id/mp3Event', async (req, res) => {
       mp3Emitter.removeListener(`event${id}`, mp3Update);
     };
   };
-
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
@@ -151,8 +156,8 @@ app.get('/:id/mp3Event', async (req, res) => {
 });
 
 
+// This route starts the stream, extracts mp3 and adds the tags.
 app.post('/mp3', (req, res) => {
-  // This route starts the stream, extracts mp3 and adds the tags.
   const id = req.body.id;
   const url = req.body.url;
   const track = req.body.title;
@@ -160,48 +165,65 @@ app.post('/mp3', (req, res) => {
   const videoPath = path.join(__dirname, `${id}.mp4`);
   const audioPath = path.join(__dirname, `${id}.mp3`);
   const thumb = path.join(__dirname, 'public', `${id}.jpg`);
-  const video = ytdl(url, {quality: 'highestaudio'});
+  var startTime;
   var dur;
-  video.pipe(fs.createWriteStream(videoPath));
-  video.on('progress', (chunkLength, downloaded, total) => {
-    const percent = Math.ceil((downloaded / total) * 100);
-    videoEmitter.emit(`event${id}`, percent);
-  });
-  video.on('end', () => {
-    const writeStream = fs.createWriteStream(audioPath);
-    const meta = { title: track, artist: artist, album: "YouTube", APIC: thumb };
-    ffmpeg(videoPath)
-      .audioCodec('libmp3lame')
-      .format('mp3')
-      .audioQuality(3)
-      .on('error', function(err) {
-        console.log(`Ffmpeg error: ${err.message}`);
-        res.status(400).end();
-      })
-    .on('codecData' , function(data) {
-      dur = timeToSecs(data.duration);
-    })
-    .on('progress', function(progress) {
-      let time = timeToSecs(progress.timemark);
-      let percent = Math.ceil((time / dur) * 100);
-      mp3Emitter.emit(`event${id}`, percent);
-    })
-      .on('end', () => {
-        const log = logStr(artist, track);
-        db.collection(coll).insertOne({text: log}, (err) => {
-          if (err) {
-            console.log(err);
-          }
-        });
-        const tagsWritten = id3.write(meta, audioPath);
-        res.json({track: track, id: id});
-      })
-      .pipe(writeStream, {end: true});
-  });
+  const start = () => {
+    const video = ytdl(url, {quality: 'highestaudio'});
+    video.pipe(fs.createWriteStream(videoPath));
+
+    video.once('response', () => {
+      startTime = Date.now();
+    });
+
+    video.on('progress', (chunkLength, downloaded, total) => {
+      var percent = downloaded / total;
+      const downloadedMins = (Date.now() - startTime) / 1000 / 60;
+      const estimate = downloadedMins / percent - downloadedMins;
+      if (estimate.toFixed(2) >= 1.5) {
+        console.log("Slow connection.");
+        video.destroy();
+        start();
+      }
+      videoEmitter.emit(`event${id}`, Math.floor(percent * 100));
+    });
+
+    video.on('end', () => {
+      const writeStream = fs.createWriteStream(audioPath);
+      const meta = { title: track, artist: artist, album: "YouTube", APIC: thumb };
+      ffmpeg(videoPath, {niceness: "10"})
+        .audioCodec('libmp3lame')
+        .format('mp3')
+        .audioQuality(3)
+        .on('error', function(err) {
+          console.log(`Ffmpeg error: ${err.message}`);
+          res.status(400).end();
+        })
+        .on('codecData' , function(data) {
+          dur = timeToSecs(data.duration);
+        })
+        .on('progress', function(progress) {
+          let time = timeToSecs(progress.timemark);
+          let percent = Math.floor((time / dur) * 100);
+          mp3Emitter.emit(`event${id}`, percent);
+        })
+        .on('end', () => {
+          const log = logStr(artist, track);
+          db.collection(coll).insertOne({text: log}, (err) => {
+            if (err) {
+              console.log(err);
+            }
+          });
+          const tagsWritten = id3.write(meta, audioPath);
+          res.json({track: track, id: id});
+        })
+        .pipe(writeStream, {end: true});
+    });
+  };
+  start();
 });
 
+// Route to provide download.
 app.get('/download/:id', function(req, res) {
-  // Route to provide download.
   const id = req.params.id;
   const vidName = `${id.slice(0, id.indexOf('.mp3'))}.mp4`;
   const thumbName = `${id.slice(0, id.indexOf('.mp3'))}.jpg`;
@@ -229,8 +251,8 @@ app.get('/download/:id', function(req, res) {
   }, 1000);
 });
 
+// Route for the log feature.
 app.post('/log', function(req, res) {
-  // Change this so that we look in the database first.
   db.collection("users").findOne({name: req.body.user}, function(err, result) {
     if (err) {
       throw err;
@@ -253,6 +275,7 @@ app.post('/log', function(req, res) {
   });
 });
 
+// Anything else.
 app.all('*', function(req, res) {
   res.status(404).send('Page not found.');
 });
