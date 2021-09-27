@@ -33,6 +33,7 @@
           <input type="text" id="title" value="" size="30" /><br /><br />
           <input type="text" id="vidURL" value="" hidden />
           <input type="text" id="vidID" value="" hidden />
+          <input type="text" id="vidLength" value="" hidden />
           <div class="buttons">
             <button id="swap" onclick="swap()">Swap Tags</button>
             <button id="download" onclick="getmp3()">Download</button>
@@ -49,6 +50,7 @@
           var formArtist = document.getElementById("artist");
           var formTitle = document.getElementById("title");
           var formID = document.getElementById("vidID");
+          var formLength = document.getElementById("vidLength");
           var formURL = document.getElementById("vidURL");
           var tagDiv = document.getElementById("tagging");
           var go = document.getElementById("go");
@@ -163,6 +165,7 @@
                       formTitle.value = tags.track;
                       formID.value = id;
                       formURL.value = url;
+                      formLength.value = length;
                       formArtist.value = tags.artist;
                     }
 
@@ -200,7 +203,6 @@
 
           /** Tell server to download the video and convert to mp3. */
           function getmp3() {
-                      let url = formURL.value;
                       let id = formID.value;
 
                       // Function to listen for progress info.
@@ -239,6 +241,8 @@
                                   return () => mp3EventSource.close();
                                 };
 
+                      let url = formURL.value;
+                      let length = formLength.value;
                       let title = formTitle.value;
                       let artist = formArtist.value;
                       bar.style.backgroundColor = "Blue";
@@ -256,6 +260,7 @@
                                               id: id,
                                               title: title,
                                               artist: artist,
+                                              length: length,
                                             }),
                                   headers: {
                                               "Content-Type": "application/json; charset=utf-8",

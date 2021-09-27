@@ -161,6 +161,7 @@ app.post('/mp3', (req, res) => {
   const id = req.body.id;
   const url = req.body.url;
   const track = req.body.title;
+  const length = req.body.length;
   const artist = req.body.artist;
   const videoPath = path.join(__dirname, `${id}.mp4`);
   const audioPath = path.join(__dirname, `${id}.mp3`);
@@ -179,8 +180,11 @@ app.post('/mp3', (req, res) => {
     video.on('progress', (chunkLength, downloaded, total) => {
       var percent = downloaded / total;
       const downloadedMins = (Date.now() - startTime) / 1000 / 60;
-      const estimate = downloadedMins / percent - downloadedMins;
-      if (estimate.toFixed(2) >= 1.5) {
+      var estimate = Math.ceil(downloadedMins / percent - downloadedMins);
+      if (estimate == 0) {
+        estimate = 1;
+      }
+      if ((length / estimate) >= 600) { 
         console.log("Slow connection.");
         video.destroy();
         start();
