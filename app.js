@@ -175,6 +175,7 @@ app.post('/mp3', (req, res) => {
       startTime = Date.now();
     });
 
+    // Check if it is slow connection. Restart stream if so.
     video.on('progress', (chunkLength, downloaded, total) => {
       var percent = downloaded / total;
       const downloadedMins = (Date.now() - startTime) / 1000 / 60;

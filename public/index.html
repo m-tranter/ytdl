@@ -265,7 +265,9 @@
                                     if (!response.ok) {
                                                 mp3EventSource = undefined;
                                                 mp4EventSource = undefined;
+                                                tagDiv.style.display = "none";
                                                 msg.innerHTML = "Try another link please.";
+                                                container.style.display = "none"; 
                                                 throw Error("Bad URL");
                                               }
                                     return response.json();
