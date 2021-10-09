@@ -12,14 +12,15 @@ body {
   background-color: LightGrey;
 }
 
-#container {
-  background-color: wheat;
+#container,
+#tagging,
+#logArea {
   display: none;
 }
 
 #bar {
   width: 0%;
-  height: 30px;
+  height: 20px;
   background-color: Blue;
 }
 
@@ -55,7 +56,6 @@ h4 {
   font-size: 12px;
   border-color: black;
   border-width: 1px;
-  display: none;
   padding-left: 10px;
 }
 
@@ -96,7 +96,9 @@ label,
 }
 
 #go,
-#download {
+#download,
+#swap,
+#thumb {
   border-radius: 4px;
   border: 2px solid #0485ff;
   background: #0485ff;
@@ -108,24 +110,19 @@ label,
   justify-content: space-between;
 }
 
-#swap {
-  border-radius: 4px;
+#swap,
+#thumb {
   border: 2px solid Green;
-  color: white;
   background: Green;
 }
 
 #thumb {
-  border-radius: 4px;
   border: 2px solid black;
+  background: Wheat;
 }
 
 .inline {
   display: inline-block;
-}
-
-#tagging {
-  display: none;
 }
 
 #msg {
