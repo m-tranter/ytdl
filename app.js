@@ -45,8 +45,8 @@ app.use(express.json());
 
 // Routes
 // Try to get the video id and title and send to client.
-app.post('/video', (req, res) => {
-  checkURL(res, req.body.obj);
+app.get('/video/', (req, res) => {
+  checkURL(res, req.query.url);
 });
 
 // Route for mp4 progress bar.

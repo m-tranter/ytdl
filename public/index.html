@@ -9,7 +9,6 @@
     <input
         type="text"
         id="url"
-        value="Video address"
         onfocus="inputClicked()"
         size="50"
         />
@@ -124,16 +123,8 @@
 
           /** Send url to server and get information back. */
           function sendURL() {
-                      let song = {};
                       msg.innerHTML = "Checking URL.";
-                      song.url = inputBox.value;
-                      fetch("/video", {
-                                  method: "post",
-                                  body: JSON.stringify({obj: song}),
-                                  headers: {
-                                              "Content-Type": "application/json; charset=utf-8",
-                                            },
-                                })
+                      fetch('/video/?url=' + inputBox.value, {method : "get"})
                         .then((response) => {
                                     if (!response.ok) {
                                                 msg.innerHTML = "Invalid URL.";

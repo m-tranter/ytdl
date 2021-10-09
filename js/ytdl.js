@@ -9,8 +9,9 @@ const convertMp3 = require('../js/ffmpeg');
 const ytdl = require('ytdl-core');
 
 /** Use ytdl-core to check the URL and get info. */
-function checkURL(res, obj) {
+function checkURL(res, url) {
   try {
+    let obj = {url: url};
     const id = ytdl.getURLVideoID(obj.url);
     obj.id = id + randID(3);
     // Get the thumbnail into a buffer. Crop & save it.
