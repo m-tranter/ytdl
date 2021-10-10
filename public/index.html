@@ -54,8 +54,8 @@
           var swapBtn = document.getElementById("swap");
           var bar = document.getElementById("bar");
           var container = document.getElementById("container");
-          var mp3EventSource;
-          var mp4EventSource;
+          var mp3Events = [];
+          var mp4Events = [];
           var songs = [];
 
           // Create some listeners so "return" clicks buttons.
@@ -171,14 +171,23 @@
                                 };
 
                       // Progress bars.         
-                        let myEvent = `progress${song.id}`;
-                      mp4EventSource = new EventSource(`/${song.id}/mp4Event`);
+                      let myEvent = `progress${song.id}`;
+
+                      // Close old event sources.
+                      if (mp3Events.length !== 0) {
+                                  mp3Events.pop().close();
+                                  mp4Events.pop().close();
+                                }
+
+                      let mp4EventSource = new EventSource(`/${song.id}/mp4Event`);
+                      mp4Events.push(mp4EventSource);
                       function getVidProgress () {
                                   mp4EventSource.addEventListener(myEvent, updateMp4Data);
                                   return () => mp4EventSource.close();
                                 };
 
-                      mp3EventSource = new EventSource(`/${song.id}/mp3Event`);
+                      let mp3EventSource = new EventSource(`/${song.id}/mp3Event`);
+                      mp3Events.push(mp3EventSource);
                       function getMp3Progress () {
                                   mp3EventSource.addEventListener(myEvent, updateMp3Data);
                                   return () => mp3EventSource.close();
