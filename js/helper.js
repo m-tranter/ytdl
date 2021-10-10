@@ -43,13 +43,14 @@ function startProgress(res, id, emitter, callback) {
     'Connection': 'keep-alive',
   });
   emitter.on(`event${id}`, callback); 
+  
 };
 
 /** Delete files from the server. */
 function delFile(file) {
     fs.unlink(file, function(err) {
       if (err) {
-        console.log('Error deleting file.');
+        console.log(`Error deleting file: ${file}.`);
       }
     });
 };

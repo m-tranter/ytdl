@@ -6,9 +6,9 @@
 const express = require('express');
 const path = require('path');
 const dotenv = require('dotenv');
+const EventEmitter = require('events');
 const {delFile, doUpdate, startProgress, logStr} = require('./js/helper');
 const {checkURL, fetchMp4} = require('./js/ytdl');
-const EventEmitter = require('events');
 
 // Set some variables
 dotenv.config();
@@ -25,18 +25,16 @@ const client = new MongoClient(uri,
 );
 const db = client.db('ytdl');
 const coll = (port === 3000) ? 'downloads': 'onlineDownloads';
+client.connect((err) => {
+  if (err) { 
+    console.log('MongoDB failed to connect.');
+  }
+});
 
 // Start the server.
 const app = express();
 app.listen(port, () => {
   console.log(`Server listening on port ${port}.`);
-});
-
-// Connect to the database
-client.connect((err) => {
-  if (err) { 
-    console.log('MongoDB failed to connect.');
-  }
 });
 
 // Middleware
@@ -74,6 +72,7 @@ app.post('/mp3', (req, res) => {
 app.post('/download', function(req, res) {
   const obj = req.body.obj;
   res.download(obj.audioFile);
+  // Update the database.
   db.collection(coll).insertOne({text: logStr(obj.artist, obj.title)}, (err) => {
     if (err) {
       console.log(err);

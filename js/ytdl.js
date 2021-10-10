@@ -7,6 +7,7 @@ const gm = require('gm');
 const path = require('path');
 const convertMp3 = require('../js/ffmpeg');
 const ytdl = require('ytdl-core');
+var lastID;
 
 /** Use ytdl-core to check the URL and get info. */
 function checkURL(res, url) {
@@ -51,9 +52,14 @@ function checkURL(res, url) {
 
 /** Use ytdl-core to fetch the video. */
 function fetchMp4(obj, res, mp4Emitter, mp3Emitter) {
+  if (lastID !== undefined) {
+    mp3Emitter.removeAllListeners(lastID);
+    mp4Emitter.removeAllListeners(lastID);
+  }
   obj.videoFile = `${obj.id}.mp4`
   obj.videoPath = path.join(__dirname, '..', obj.videoFile);
   var startTime;
+  lastID = `event${obj.id}`;
   const start = () => {
     const video = ytdl(obj.url, {quality: 'highestaudio'});
     video.pipe(fs.createWriteStream(obj.videoPath));

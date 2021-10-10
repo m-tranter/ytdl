@@ -171,15 +171,16 @@
                                 };
 
                       // Progress bars.         
+                        let myEvent = `progress${song.id}`;
                       mp4EventSource = new EventSource(`/${song.id}/mp4Event`);
                       function getVidProgress () {
-                                  mp4EventSource.addEventListener(`progress${song.id}`, updateMp4Data);
+                                  mp4EventSource.addEventListener(myEvent, updateMp4Data);
                                   return () => mp4EventSource.close();
                                 };
 
                       mp3EventSource = new EventSource(`/${song.id}/mp3Event`);
                       function getMp3Progress () {
-                                  mp3EventSource.addEventListener(`progress${song.id}`, updateMp3Data);
+                                  mp3EventSource.addEventListener(myEvent, updateMp3Data);
                                   return () => mp3EventSource.close();
                                 };
 
@@ -201,8 +202,6 @@
                                 })
                         .then((response) => {
                                     if (!response.ok) {
-                                                mp3EventSource = undefined;
-                                                mp4EventSource = undefined;
                                                 tagDiv.style.display = "none";
                                                 msg.innerHTML = "Try another link please.";
                                                 container.style.display = "none"; 
