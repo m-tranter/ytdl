@@ -7,7 +7,7 @@ const gm = require('gm');
 const path = require('path');
 const convertMp3 = require('../js/ffmpeg');
 const ytdl = require('ytdl-core');
-var lastID;
+var lastEvent;
 
 /** Use ytdl-core to check the URL and get info. */
 function checkURL(res, url) {
@@ -52,14 +52,15 @@ function checkURL(res, url) {
 
 /** Use ytdl-core to fetch the video. */
 function fetchMp4(obj, res, mp4Emitter, mp3Emitter) {
-  if (lastID !== undefined) {
-    mp3Emitter.removeAllListeners(lastID);
-    mp4Emitter.removeAllListeners(lastID);
+  let newEvent = `event${obj.id}`;
+  if (lastEvent !== newEvent) {
+    mp3Emitter.removeAllListeners(lastEvent);
+    mp4Emitter.removeAllListeners(lastEvent);
   }
+  lastEvent = `event${obj.id}`;
   obj.videoFile = `${obj.id}.mp4`
   obj.videoPath = path.join(__dirname, '..', obj.videoFile);
   var startTime;
-  lastID = `event${obj.id}`;
   const start = () => {
     const video = ytdl(obj.url, {quality: 'highestaudio'});
     video.pipe(fs.createWriteStream(obj.videoPath));
@@ -74,12 +75,12 @@ function fetchMp4(obj, res, mp4Emitter, mp3Emitter) {
       if (estimate == 0) {
         estimate = 1;
       }
-      if ((obj.length / estimate) >= 600) { 
-        mp4Emitter.emit(`event${obj.id}`, -1); 
+      if ((obj.length / estimate) >= 800) { 
+        mp4Emitter.emit(newEvent, -1); 
         video.destroy();
         start();
       } else {
-      mp4Emitter.emit(`event${obj.id}`, Math.floor(percent * 100));
+      mp4Emitter.emit(newEvent, Math.floor(percent * 100));
       }
     });
     video.on('end', () => {

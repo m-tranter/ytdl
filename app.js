@@ -44,6 +44,7 @@ app.use(express.json());
 // Routes
 // Try to get the video id and title and send to client.
 app.get('/video/', (req, res) => {
+  console.log(req.query.url);
   checkURL(res, req.query.url);
 });
 
