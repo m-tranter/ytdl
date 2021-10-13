@@ -39,6 +39,7 @@ function convertMp3(obj, mp3Emitter) {
       mp3Emitter.emit(`event${obj.id}`, percent);
     })
     .on('end', () => {
+      mp3Emitter.emit(`event${obj.id}`, 100);
       const tagsWritten = id3.write(meta, audioPath);
     })
     .pipe(writeStream, {end: true});

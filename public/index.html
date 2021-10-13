@@ -165,7 +165,6 @@
                                                       }
                                   // Finish if it is 100%
                                   if (prog == 100) {
-                                              bar.style.width = "100%";
                                               mp3EventSource = new EventSource(`/${song.id}/mp3Event`);
                                               mp3Events.push(mp3EventSource);
                                               function getMp3Progress () {
@@ -173,7 +172,7 @@
                                                           return () => mp3EventSource.close();
                                                         };
                                               bar.style.backgroundColor = "Green";
-                                              bar.style.width = "0";
+                                              bar.style.width = "0%";
                                               msg.innerHTML = "Converting to mp3.";
                                               getMp3Progress();
                                               mp4EventSource.close();

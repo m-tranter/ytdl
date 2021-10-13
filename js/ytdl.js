@@ -15,6 +15,8 @@ function checkURL(res, url) {
     let obj = {url: url};
     const id = ytdl.getURLVideoID(obj.url);
     obj.id = id + randID(3);
+    obj.videoFile = `${obj.id}.mp4`;
+    obj.audioFile = `${obj.id}.mp3`; 
     // Get the thumbnail into a buffer. Crop & save it.
     obj.thumb = `${obj.id}.jpg`;
     const thumb = path.join(__dirname, '..', 'public', obj.thumb);
@@ -58,7 +60,6 @@ function fetchMp4(obj, mp4Emitter, mp3Emitter) {
     mp4Emitter.removeAllListeners(lastEvent);
   }
   lastEvent = `event${obj.id}`;
-  obj.videoFile = `${obj.id}.mp4`
   obj.videoPath = path.join(__dirname, '..', obj.videoFile);
   var startTime;
   const start = () => {
@@ -84,6 +85,7 @@ function fetchMp4(obj, mp4Emitter, mp3Emitter) {
       }
     });
     video.on('end', () => {
+      mp4Emitter.emit(newEvent, 100); 
       convertMp3(obj, mp3Emitter);
     });
   };

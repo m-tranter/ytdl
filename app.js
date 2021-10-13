@@ -72,8 +72,6 @@ app.post('/mp3', (req, res) => {
 // Route to provide download.
 app.post('/download', function(req, res) {
   const obj = req.body.obj;
-  obj.audioFile = `${obj.id}.mp3`;
-  obj.videoFile = `${obj.id}.mp4`;
   res.download(obj.audioFile);
   // Update the database.
   db.collection(coll).insertOne({text: logStr(obj.artist, obj.title)}, (err) => {
