@@ -7,7 +7,7 @@ const gm = require('gm');
 const path = require('path');
 const convertMp3 = require('../js/ffmpeg');
 const ytdl = require('ytdl-core');
-var lastEvent;
+let oldEventID;
 
 /** Use ytdl-core to check the URL and get info. */
 function checkURL(res, url) {
@@ -54,14 +54,14 @@ function checkURL(res, url) {
 
 /** Use ytdl-core to fetch the video. */
 function fetchMp4(obj, mp4Emitter, mp3Emitter) {
-  let newEvent = `event${obj.id}`;
-  if (lastEvent !== newEvent) {
-    mp3Emitter.removeAllListeners(lastEvent);
-    mp4Emitter.removeAllListeners(lastEvent);
+  let startTime;
+  let newEventID = `event${obj.id}`;
+  if (newEventID !== oldEventID) {
+    mp3Emitter.removeAllListeners(oldEventID);
+    mp4Emitter.removeAllListeners(oldEventID);
   }
-  lastEvent = `event${obj.id}`;
+  oldEventID = newEventID;
   obj.videoPath = path.join(__dirname, '..', obj.videoFile);
-  var startTime;
   const start = () => {
     const video = ytdl(obj.url, {quality: 'highestaudio'});
     video.pipe(fs.createWriteStream(obj.videoPath));
@@ -70,22 +70,22 @@ function fetchMp4(obj, mp4Emitter, mp3Emitter) {
     });
     // Check if it is slow connection. Restart stream if so.
     video.on('progress', (chunkLength, downloaded, total) => {
-      var percent = downloaded / total;
-      const downloadedMins = (Date.now() - startTime) / 1000 / 60;
-      var estimate = Math.ceil(downloadedMins / percent - downloadedMins);
+      let percent = downloaded / total;
+      let downloadedMins = (Date.now() - startTime) / 1000 / 60;
+      let estimate = Math.ceil(downloadedMins / percent - downloadedMins);
       if (estimate == 0) {
         estimate = 1;
       }
       if ((obj.length / estimate) >= 800) { 
-        mp4Emitter.emit(newEvent, -1); 
+        mp4Emitter.emit(newEventID, -1); 
         video.destroy();
         start();
       } else {
-      mp4Emitter.emit(newEvent, Math.floor(percent * 100));
+      mp4Emitter.emit(newEventID, Math.floor(percent * 100));
       }
     });
     video.on('end', () => {
-      mp4Emitter.emit(newEvent, 100); 
+      mp4Emitter.emit(newEventID, 100); 
       convertMp3(obj, mp3Emitter);
     });
   };

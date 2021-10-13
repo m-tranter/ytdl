@@ -43,20 +43,20 @@
         </script>
         <script>
           "use strict";
-          var inputBox = document.getElementById("url");
-          var msg = document.getElementById("msg");
-          var thumb = document.getElementById("thumb");
-          var formArtist = document.getElementById("artist");
-          var formTitle = document.getElementById("title");
-          var formID = document.getElementById("vidID");
-          var tagDiv = document.getElementById("tagging");
-          var go = document.getElementById("go");
-          var swapBtn = document.getElementById("swap");
-          var bar = document.getElementById("bar");
-          var container = document.getElementById("container");
-          var mp3Events = [];
-          var mp4Events = [];
-          var songs = [];
+          let inputBox = document.getElementById("url");
+          let msg = document.getElementById("msg");
+          let thumb = document.getElementById("thumb");
+          let formArtist = document.getElementById("artist");
+          let formTitle = document.getElementById("title");
+          let formID = document.getElementById("vidID");
+          let tagDiv = document.getElementById("tagging");
+          let go = document.getElementById("go");
+          let swapBtn = document.getElementById("swap");
+          let bar = document.getElementById("bar");
+          let container = document.getElementById("container");
+          let mp3Events = [];
+          let mp4Events = [];
+          let songs = [];
 
           // Create some listeners so "return" clicks buttons.
           formArtist.addEventListener("keyup", function (event) {
@@ -104,10 +104,8 @@
                                 }, 500);
                       let tags = getTags(song.title, song.author);
                       formTitle.value = tags.track;
-                      song.title = tags.track;
-                      song.artist = tags.artist;
-                      formID.value = song.id;
                       formArtist.value = tags.artist;
+                      formID.value = song.id;
                       songs.push(song);
                     }
 
@@ -122,6 +120,12 @@
 
           /** Send url to server and get information back. */
           function sendURL() {
+                      // Close old event sources.
+                      if (mp3Events.length !== 0) {
+                                  mp3Events.pop().close();
+                                  mp4Events.pop().close();
+                                }
+
                       let url = inputBox.value;
                       inputBox.value = "";
                       msg.innerHTML = "Checking URL.";
@@ -141,9 +145,12 @@
 
           /** Tell server to download the video and convert to mp3. */
           function getmp3() {
-                      var mp3EventSource;
+                      let mp3EventSource;
                       let song = songs.find((elem) => elem.id == formID.value);
                       songs = songs.filter(elem => elem.id != formID.value);
+                      song.artist = formArtist.value;
+                      song.title = formTitle.value;
+
                       // Function to listen for progress info.
                       const updateMp3Data = (progressEvent) => {
                                   const prog = JSON.parse(progressEvent.data);
@@ -151,6 +158,7 @@
                                   // Finish if it is 100%
                                   if (prog == 100) {
                                               mp3EventSource.close();
+                                              msg.innerHTML = "Download starting.";
                                               startDownload(song);
                                             }
                                 };
@@ -181,12 +189,6 @@
 
                       // Set up mp4 EventSource        
                       let myEvent = `progress${song.id}`;
-
-                      // Close old event sources.
-                      if (mp3Events.length !== 0) {
-                                  mp3Events.pop().close();
-                                  mp4Events.pop().close();
-                                }
 
                       let mp4EventSource = new EventSource(`/${song.id}/mp4Event`);
                       mp4Events.push(mp4EventSource);

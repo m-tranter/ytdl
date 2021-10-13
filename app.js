@@ -1,4 +1,7 @@
-// My youtube downloader
+ /*
+  * My YouTube mp3 downloader.
+  * Built on ytdl-core and ffmpeg.
+  */
 
 "use strict";
 
@@ -14,8 +17,8 @@ const {checkURL, fetchMp4} = require('./js/ytdl');
 dotenv.config();
 const port = process.env.PORT || 3000;
 const dir = path.join(__dirname, 'public');
-var mp3Emitter = new EventEmitter;
-var mp4Emitter = new EventEmitter;
+let mp3Emitter = new EventEmitter;
+let mp4Emitter = new EventEmitter;
 
 // MongoDB stuff
 const {MongoClient} = require('mongodb');
