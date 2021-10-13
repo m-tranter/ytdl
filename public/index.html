@@ -87,7 +87,6 @@
           /** Display the tags and allow editing. */
           function showTags(song) {
                       thumb.src = "placeholder.png";
-                      inputBox.value = "";
                       if (song.length >= 1800) {
                                   msg.style.color = "Red";
                                   msg.innerHTML = `${lengthStr(song.length)}WARNING: Long video.`;
@@ -123,8 +122,10 @@
 
           /** Send url to server and get information back. */
           function sendURL() {
+                      let url = inputBox.value;
+                      inputBox.value = "";
                       msg.innerHTML = "Checking URL.";
-                      fetch('/video/?url=' + inputBox.value, {method : "get"})
+                      fetch('/video/?url=' + url, {method : "get"})
                         .then((response) => {
                                     if (!response.ok) {
                                                 msg.innerHTML = "Invalid URL.";
@@ -140,6 +141,7 @@
 
           /** Tell server to download the video and convert to mp3. */
           function getmp3() {
+                      var mp3EventSource;
                       let song = songs.find((elem) => elem.id == formID.value);
                       songs = songs.filter(elem => elem.id != formID.value);
                       // Function to listen for progress info.
@@ -149,6 +151,7 @@
                                   // Finish if it is 100%
                                   if (prog == 100) {
                                               mp3EventSource.close();
+                                              startDownload(song);
                                             }
                                 };
 
@@ -162,6 +165,13 @@
                                                       }
                                   // Finish if it is 100%
                                   if (prog == 100) {
+                                              bar.style.width = "100%";
+                                              mp3EventSource = new EventSource(`/${song.id}/mp3Event`);
+                                              mp3Events.push(mp3EventSource);
+                                              function getMp3Progress () {
+                                                          mp3EventSource.addEventListener(myEvent, updateMp3Data);
+                                                          return () => mp3EventSource.close();
+                                                        };
                                               bar.style.backgroundColor = "Green";
                                               bar.style.width = "0";
                                               msg.innerHTML = "Converting to mp3.";
@@ -170,7 +180,7 @@
                                             }
                                 };
 
-                      // Progress bars.         
+                      // Set up mp4 EventSource        
                       let myEvent = `progress${song.id}`;
 
                       // Close old event sources.
@@ -184,13 +194,6 @@
                       function getVidProgress () {
                                   mp4EventSource.addEventListener(myEvent, updateMp4Data);
                                   return () => mp4EventSource.close();
-                                };
-
-                      let mp3EventSource = new EventSource(`/${song.id}/mp3Event`);
-                      mp3Events.push(mp3EventSource);
-                      function getMp3Progress () {
-                                  mp3EventSource.addEventListener(myEvent, updateMp3Data);
-                                  return () => mp3EventSource.close();
                                 };
 
                       bar.style.backgroundColor = "Blue";
@@ -217,9 +220,6 @@
                                                 throw Error("Bad URL");
                                               }
                                     return response.json();
-                                  })
-                        .then((json) => {
-                                    startDownload(json.obj);
                                   })
                         .catch((err) => console.log(err));
                       getVidProgress();

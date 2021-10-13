@@ -51,7 +51,7 @@ function checkURL(res, url) {
 };
 
 /** Use ytdl-core to fetch the video. */
-function fetchMp4(obj, res, mp4Emitter, mp3Emitter) {
+function fetchMp4(obj, mp4Emitter, mp3Emitter) {
   let newEvent = `event${obj.id}`;
   if (lastEvent !== newEvent) {
     mp3Emitter.removeAllListeners(lastEvent);
@@ -84,7 +84,7 @@ function fetchMp4(obj, res, mp4Emitter, mp3Emitter) {
       }
     });
     video.on('end', () => {
-      convertMp3(obj, mp3Emitter, res);
+      convertMp3(obj, mp3Emitter);
     });
   };
   start();

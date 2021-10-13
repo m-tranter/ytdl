@@ -17,7 +17,7 @@ function timeToSecs (time) {
 };
 
 /** Use ffmpeg to create an mp3 from the video stream. Add metadata. */
-function convertMp3(obj, mp3Emitter, res) {
+function convertMp3(obj, mp3Emitter) {
   obj.audioFile = `${obj.id}.mp3`; 
   const audioPath = path.join(__dirname, '..', obj.audioFile);
   const thumbPath = path.join(__dirname, '..', 'public', `${obj.id}.jpg`);
@@ -29,7 +29,6 @@ function convertMp3(obj, mp3Emitter, res) {
     .audioQuality(3)
     .on('error', function(err) {
       console.log(`Ffmpeg error: ${err.message}`);
-      res.status(400).end();
     })
     .on('codecData' , function(data) {
       obj.dur = timeToSecs(data.duration);
@@ -41,10 +40,8 @@ function convertMp3(obj, mp3Emitter, res) {
     })
     .on('end', () => {
       const tagsWritten = id3.write(meta, audioPath);
-      res.json({obj: obj});
     })
     .pipe(writeStream, {end: true});
-
 };
 
 module.exports = convertMp3;
