@@ -53,7 +53,7 @@ function checkURL(res, url) {
 };
 
 /** Use ytdl-core to fetch the video. */
-function fetchMp4(obj, mp4Emitter, mp3Emitter) {
+function fetchMp4(obj, res, mp4Emitter, mp3Emitter) {
   let startTime;
   let newEventID = `event${obj.id}`;
   if (newEventID !== oldEventID) {
@@ -86,7 +86,7 @@ function fetchMp4(obj, mp4Emitter, mp3Emitter) {
     });
     video.on('end', () => {
       mp4Emitter.emit(newEventID, 100); 
-      convertMp3(obj, mp3Emitter);
+      convertMp3(obj, res, mp3Emitter);
     });
   };
   start();

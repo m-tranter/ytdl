@@ -83,6 +83,39 @@
                                 }
                     });
 
+          /** Clear the message element & input box on focus. */
+          function inputClicked() {
+                      msg.style.color = "Navy";
+                      msg.innerHTML = "&nbsp;";
+                      inputBox.value = "";
+                      container.style.display = "none";
+                      tagDiv.style.display = "none";
+                    }
+
+          /** Send url to server and get information back. */
+          function sendURL() {
+                      // Close old event sources.
+                      if (mp3Events.length !== 0) {
+                                  mp3Events.pop().close();
+                                  mp4Events.pop().close();
+                                }
+                      let url = inputBox.value;
+                      inputBox.value = "";
+                      msg.innerHTML = "Checking URL.";
+                      fetch('/video/?url=' + url, {method : "get"})
+                        .then((response) => {
+                                    if (!response.ok) {
+                                                msg.innerHTML = "Invalid URL.";
+                                                throw Error("Bad URL");
+                                              }
+                                    return response.json();
+                                  })
+                        .then((json) => {
+                                    showTags(json.obj);
+                                  })
+                        .catch((err) => console.log(err));
+                    }
+
 
           /** Display the tags and allow editing. */
           function showTags(song) {
@@ -109,49 +142,20 @@
                       songs.push(song);
                     }
 
-          /** Clear the message element & input box on focus. */
-          function inputClicked() {
-                      msg.style.color = "Navy";
-                      msg.innerHTML = "&nbsp;";
-                      inputBox.value = "";
-                      container.style.display = "none";
-                      tagDiv.style.display = "none";
-                    }
-
-          /** Send url to server and get information back. */
-          function sendURL() {
-                      // Close old event sources.
-                      if (mp3Events.length !== 0) {
-                                  mp3Events.pop().close();
-                                  mp4Events.pop().close();
-                                }
-
-                      let url = inputBox.value;
-                      inputBox.value = "";
-                      msg.innerHTML = "Checking URL.";
-                      fetch('/video/?url=' + url, {method : "get"})
-                        .then((response) => {
-                                    if (!response.ok) {
-                                                msg.innerHTML = "Invalid URL.";
-                                                throw Error("Bad URL");
-                                              }
-                                    return response.json();
-                                  })
-                        .then((json) => {
-                                    showTags(json.obj);
-                                  })
-                        .catch((err) => console.log(err));
-                    }
 
           /** Tell server to download the video and convert to mp3. */
           function getmp3() {
-                      let mp3EventSource;
-                      let song = songs.find((elem) => elem.id == formID.value);
-                      songs = songs.filter(elem => elem.id != formID.value);
-                      song.artist = formArtist.value;
-                      song.title = formTitle.value;
+                      // Functions to listen for progress info.
+                      function getMp3Progress () {
+                                  mp3EventSource.addEventListener(myEvent, updateMp3Data);
+                                  return () => mp3EventSource.close();
+                                };
 
-                      // Function to listen for progress info.
+                      function getVidProgress () {
+                                  mp4EventSource.addEventListener(myEvent, updateMp4Data);
+                                  return () => mp4EventSource.close();
+                                };
+
                       const updateMp3Data = (progressEvent) => {
                                   const prog = JSON.parse(progressEvent.data);
                                   bar.style.width = `${prog}%`;
@@ -159,7 +163,6 @@
                                   if (prog == 100) {
                                               mp3EventSource.close();
                                               msg.innerHTML = "Download starting.";
-                                              startDownload(song);
                                             }
                                 };
 
@@ -173,30 +176,26 @@
                                                       }
                                   // Finish if it is 100%
                                   if (prog == 100) {
+                                              // Init mp3 listener.
                                               mp3EventSource = new EventSource(`/${song.id}/mp3Event`);
                                               mp3Events.push(mp3EventSource);
-                                              function getMp3Progress () {
-                                                          mp3EventSource.addEventListener(myEvent, updateMp3Data);
-                                                          return () => mp3EventSource.close();
-                                                        };
                                               bar.style.backgroundColor = "Green";
                                               bar.style.width = "0%";
                                               msg.innerHTML = "Converting to mp3.";
-                                              getMp3Progress();
                                               mp4EventSource.close();
+                                              getMp3Progress();
                                             }
                                 };
+                      let song = songs.find((elem) => elem.id == formID.value);
+                      songs = songs.filter(elem => elem.id != formID.value);
+                      song.artist = formArtist.value;
+                      song.title = formTitle.value;
 
-                      // Set up mp4 EventSource        
+                      // Set up EventSources        
                       let myEvent = `progress${song.id}`;
-
                       let mp4EventSource = new EventSource(`/${song.id}/mp4Event`);
                       mp4Events.push(mp4EventSource);
-                      function getVidProgress () {
-                                  mp4EventSource.addEventListener(myEvent, updateMp4Data);
-                                  return () => mp4EventSource.close();
-                                };
-
+                      let mp3EventSource;
                       bar.style.backgroundColor = "Blue";
                       bar.style.width = "0%";
                       msg.style.color = "Navy";
@@ -206,6 +205,7 @@
                       download.style.display = "none";
                       swapBtn.style.display = "none";
                       container.style.display = "inline-block";
+                      getVidProgress();
                       fetch("/mp3", {
                                   method: "post",
                                   body: JSON.stringify({obj: song}),
@@ -218,18 +218,19 @@
                                                 tagDiv.style.display = "none";
                                                 msg.innerHTML = "Try another link please.";
                                                 container.style.display = "none"; 
-                                                throw Error("Bad URL");
-                                              }
+                                                throw Error("/mp3 GET failed.");
+                                              } 
                                     return response.json();
                                   })
+                        .then((json) => {
+                                    console.log(json.obj);
+                                    startDownload(json.obj);
+                                  })
                         .catch((err) => console.log(err));
-                      getVidProgress();
-                    }
+                    };
 
           /** Trigger the download. */
           async function startDownload(obj) {
-                      msg.innerHTML = "&nbsp;";
-                      bar.style.width = '100%';
                       const song = await fetch("/download", {
                                   method: "post",
                                   body: JSON.stringify({obj: obj}),
