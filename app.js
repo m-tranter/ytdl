@@ -68,7 +68,8 @@ app.get('/:id/mp3Event', async (req, res) => {
 
 // This route starts the stream, extracts mp3 and adds the tags.
 app.post('/mp3', (req, res) => {
-  fetchMp4(req.body.obj, res, mp4Emitter, mp3Emitter);
+  fetchMp4(req.body.obj, mp4Emitter, mp3Emitter);
+  res.json({obj: req.body.obj});
 });
 
 // Route to provide download.

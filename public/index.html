@@ -54,9 +54,8 @@
           let swapBtn = document.getElementById("swap");
           let bar = document.getElementById("bar");
           let container = document.getElementById("container");
-          let mp3Events = [];
-          let mp4Events = [];
           let songs = [];
+          let currentSong;
 
           // Create some listeners so "return" clicks buttons.
           formArtist.addEventListener("keyup", function (event) {
@@ -95,10 +94,6 @@
           /** Send url to server and get information back. */
           function sendURL() {
                       // Close old event sources.
-                      if (mp3Events.length !== 0) {
-                                  mp3Events.pop().close();
-                                  mp4Events.pop().close();
-                                }
                       let url = inputBox.value;
                       inputBox.value = "";
                       msg.innerHTML = "Checking URL.";
@@ -146,56 +141,57 @@
           /** Tell server to download the video and convert to mp3. */
           function getmp3() {
                       // Functions to listen for progress info.
-                      function getMp3Progress () {
-                                  mp3EventSource.addEventListener(myEvent, updateMp3Data);
-                                  return () => mp3EventSource.close();
+                      function getMp3Progress (thisSong) {
+                                  let myMp3Event = new EventSource(`/${thisSong.id}/mp3Event`);
+                                  const updateMp3Data = (progressEvent) => {
+                                              const prog = JSON.parse(progressEvent.data);
+                                              if (thisSong.id == currentSong.id) {
+                                                          bar.style.width = `${prog}%`;
+                                                        }
+                                              // Finish if it is 100%
+                                              if (prog == 100) {
+                                                          startDownload(thisSong);
+                                                          myMp3Event.close();
+                                                          if (thisSong.id == currentSong.id) {
+                                                                      msg.innerHTML = "Download starting.";
+                                                                    }
+                                                        }
+                                            };
+                                  myMp3Event.addEventListener(`progress${thisSong.id}`, updateMp3Data, false);
+                                  
                                 };
 
-                      function getVidProgress () {
-                                  mp4EventSource.addEventListener(myEvent, updateMp4Data);
-                                  return () => mp4EventSource.close();
+                      function getVidProgress (thisSong) {
+                                  let myMp4Event = new EventSource(`/${song.id}/mp4Event`);
+                                  const updateMp4Data = (progressEvent) => {
+                                              const prog = JSON.parse(progressEvent.data);
+                                              if (currentSong.id == thisSong.id) {
+                                                          if (prog == -1) {
+                                                                      msg.innerHTML = 'Slow download. Restarting.';
+                                                                      bar.style.width = '0%';
+                                                                    } else {
+                                                                                bar.style.width = `${prog}%`;
+                                                                              }
+                                                        }
+                                              // Finish if it is 100%
+                                              if (prog == 100) {
+                                                          if (currentSong.id == thisSong.id) {
+                                                                      bar.style.backgroundColor = "Green";
+                                                                      bar.style.width = "0%";
+                                                                      msg.innerHTML = "Converting to mp3.";
+                                                                    }
+                                                          getMp3Progress(thisSong);
+                                                          myMp4Event.close();
+                                                        }
+                                            };
+                                  myMp4Event.addEventListener(`progress${thisSong.id}`, updateMp4Data, false);
                                 };
 
-                      const updateMp3Data = (progressEvent) => {
-                                  const prog = JSON.parse(progressEvent.data);
-                                  bar.style.width = `${prog}%`;
-                                  // Finish if it is 100%
-                                  if (prog == 100) {
-                                              mp3EventSource.close();
-                                              msg.innerHTML = "Download starting.";
-                                            }
-                                };
-
-                      const updateMp4Data = (progressEvent) => {
-                                  const prog = JSON.parse(progressEvent.data);
-                                  if (prog == -1) {
-                                              msg.innerHTML = 'Slow download. Restarting.';
-                                              bar.style.width = '0%';
-                                            } else {
-                                                        bar.style.width = `${prog}%`;
-                                                      }
-                                  // Finish if it is 100%
-                                  if (prog == 100) {
-                                              // Init mp3 listener.
-                                              mp3EventSource = new EventSource(`/${song.id}/mp3Event`);
-                                              mp3Events.push(mp3EventSource);
-                                              bar.style.backgroundColor = "Green";
-                                              bar.style.width = "0%";
-                                              msg.innerHTML = "Converting to mp3.";
-                                              mp4EventSource.close();
-                                              getMp3Progress();
-                                            }
-                                };
                       let song = songs.find((elem) => elem.id == formID.value);
                       songs = songs.filter(elem => elem.id != formID.value);
                       song.artist = formArtist.value;
                       song.title = formTitle.value;
-
-                      // Set up EventSources        
-                      let myEvent = `progress${song.id}`;
-                      let mp4EventSource = new EventSource(`/${song.id}/mp4Event`);
-                      mp4Events.push(mp4EventSource);
-                      let mp3EventSource;
+                      currentSong = song;
                       bar.style.backgroundColor = "Blue";
                       bar.style.width = "0%";
                       msg.style.color = "Navy";
@@ -205,7 +201,6 @@
                       download.style.display = "none";
                       swapBtn.style.display = "none";
                       container.style.display = "inline-block";
-                      getVidProgress();
                       fetch("/mp3", {
                                   method: "post",
                                   body: JSON.stringify({obj: song}),
@@ -223,34 +218,33 @@
                                     return response.json();
                                   })
                         .then((json) => {
-                                    console.log(json.obj);
-                                    startDownload(json.obj);
+                                    getVidProgress(json.obj);
                                   })
                         .catch((err) => console.log(err));
                     };
 
           /** Trigger the download. */
-          async function startDownload(obj) {
-                      const song = await fetch("/download", {
-                                  method: "post",
-                                  body: JSON.stringify({obj: obj}),
-                                  headers: {
-                                              "Content-Type": "application/json; charset=utf-8",
-                                            },
-                                });
-                      const blob = await song.blob();
-                      const songURL = URL.createObjectURL(blob);
-                      const anchor = document.createElement("a");
-                      anchor.href = songURL;
-                      anchor.download = `${obj.title}.mp3`;
-                      document.body.appendChild(anchor);
-                      anchor.click();
-                      document.body.removeChild(anchor);
-                      URL.revokeObjectURL(songURL);
-                    };
+            async function startDownload(obj) {
+                        const song = await fetch("/download", {
+                                    method: "post",
+                                    body: JSON.stringify({obj: obj}),
+                                    headers: {
+                                                "Content-Type": "application/json; charset=utf-8",
+                                              },
+                                  });
+                        const blob = await song.blob();
+                        const songURL = URL.createObjectURL(blob);
+                        const anchor = document.createElement("a");
+                        anchor.href = songURL;
+                        anchor.download = `${obj.title}.mp3`;
+                        document.body.appendChild(anchor);
+                        anchor.click();
+                        document.body.removeChild(anchor);
+                        URL.revokeObjectURL(songURL);
+                      };
 
           /** Focus on the input box on load. */
-          inputBox.focus();
+            inputBox.focus();
         </script>
   </body>
 </html>
