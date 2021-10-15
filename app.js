@@ -3,7 +3,7 @@
   * Built on ytdl-core and ffmpeg.
   */
 
-"use strict";
+'use strict';
 
 // Modules
 const express = require('express');
@@ -92,15 +92,15 @@ app.post('/download', function(req, res) {
 
 // Route for the log feature.
 app.post('/log', function(req, res) {
-  db.collection("users").findOne({name: req.body.user}, function(err, result) {
+  db.collection('users').findOne({name: req.body.user}, function(err, result) {
     if (err) {
       throw err;
     } else {
       if (!result) {
-        return res.status(401).send({error: "User not found."});
+        return res.status(401).send({error: 'User not found.'});
       }
       if (req.body.password !== result.password) {
-        return res.status(401).send({error: "Incorrect password."});
+        return res.status(401).send({error: 'Incorrect password.'});
       }
       db.collection(coll).find().toArray((err, docs) => {
         if (err) {

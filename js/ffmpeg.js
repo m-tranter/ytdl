@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 const fs = require('fs');
 const path = require('path');
@@ -19,11 +19,12 @@ function timeToSecs (time) {
 /** Use ffmpeg to create an mp3 from the video stream. Add metadata. */
 function convertMp3(obj, mp3Emitter) {
   obj.audioFile = `${obj.id}.mp3`; 
+  let percent;
   const audioPath = path.join(__dirname, '..', obj.audioFile);
   const thumbPath = path.join(__dirname, '..', 'public', `${obj.id}.jpg`);
   const writeStream = fs.createWriteStream(audioPath);
-  const meta = { title: obj.title, artist: obj.artist, album: "YouTube", APIC: thumbPath };
-  ffmpeg(obj.videoPath, {niceness: "10"})
+  const meta = { title: obj.title, artist: obj.artist, album: 'YouTube', APIC: thumbPath };
+  ffmpeg(obj.videoPath, {niceness: '10'})
     .audioCodec('libmp3lame')
     .format('mp3')
     .audioQuality(3)
@@ -35,11 +36,13 @@ function convertMp3(obj, mp3Emitter) {
     })
     .on('progress', function(progress) {
       let time = timeToSecs(progress.timemark);
-      let percent = Math.floor((time / obj.dur) * 100);
+      percent = Math.floor((time / obj.dur) * 100);
       mp3Emitter.emit(`event${obj.id}`, percent);
     })
     .on('end', () => {
+      if (percent !== 100) {
       mp3Emitter.emit(`event${obj.id}`, 100);
+      }
       const tagsWritten = id3.write(meta, audioPath);
     })
     .pipe(writeStream, {end: true});

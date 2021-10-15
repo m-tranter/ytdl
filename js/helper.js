@@ -2,7 +2,7 @@
  *Helper functions.
  */
 
-"use strict";
+'use strict';
 const fs = require('fs');
 
 /** Pads a number with a leading 0. */
@@ -27,7 +27,7 @@ function logStr(artist, track) {
 function doUpdate(res, data, id, emitter, callback) {
     const percent = JSON.stringify(data);
     res.write(`event: progress${id}\n`);
-    res.write('data: ' + percent);
+    res.write(`data: ${percent}`);
     res.write('\n\n');
     if (data == 100) {
       res.end();

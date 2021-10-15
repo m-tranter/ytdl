@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 const fs = require('fs');
 const request = require('request');
@@ -54,6 +54,7 @@ function checkURL(res, url) {
 /** Use ytdl-core to fetch the video. */
 function fetchMp4(obj, mp4Emitter, mp3Emitter) {
   let startTime;
+  let progInt;
   let newEventID = `event${obj.id}`;
   obj.videoPath = path.join(__dirname, '..', obj.videoFile);
   const start = () => {
@@ -65,6 +66,7 @@ function fetchMp4(obj, mp4Emitter, mp3Emitter) {
     // Check if it is slow connection. Restart stream if so.
     video.on('progress', (chunkLength, downloaded, total) => {
       let percent = downloaded / total;
+      progInt = Math.floor(percent * 100);
       let downloadedMins = (Date.now() - startTime) / 1000 / 60;
       let estimate = Math.ceil(downloadedMins / percent - downloadedMins);
       if (estimate == 0) {
@@ -75,11 +77,13 @@ function fetchMp4(obj, mp4Emitter, mp3Emitter) {
         video.destroy();
         start();
       } else {
-      mp4Emitter.emit(newEventID, Math.floor(percent * 100));
+        mp4Emitter.emit(newEventID, progInt);
       }
     });
     video.on('end', () => {
-      mp4Emitter.emit(newEventID, 100); 
+      if (progInt !== 100) {
+        mp4Emitter.emit(newEventID, 100); 
+      };
       convertMp3(obj, mp3Emitter);
     });
   };
@@ -92,7 +96,7 @@ function randomInt(max) {
 
 /** Generate a random id (length n). */
 function randID(n) {
-  let id = "";
+  let id = '';
   for (let i = 0; i < n; i++) {
     let r = randomInt(62);
     if (r < 10) {
