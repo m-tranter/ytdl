@@ -32,8 +32,8 @@ function doUpdate(res, data, id, emitter, callback) {
     if (data == 100) {
       res.end();
       emitter.removeListener(`event${id}`, callback);
-    };
-  };
+    }
+  }
 
 /** Initiate the progress event emitter. */
 function startProgress(res, id, emitter, callback) {
@@ -44,7 +44,7 @@ function startProgress(res, id, emitter, callback) {
   });
   emitter.on(`event${id}`, callback); 
   
-};
+}
 
 /** Delete files from the server. */
 function delFile(file) {
@@ -53,6 +53,6 @@ function delFile(file) {
         console.log(`Error deleting file: ${file}.`);
       }
     });
-};
+}
 
 module.exports = {delFile, doUpdate, startProgress, logStr};

@@ -43,13 +43,14 @@ function checkURL(res, url) {
         res.json({obj: obj});
       })
       .catch((err) => {
+        console.log(err);
         res.status(400).end();
       });
   } catch (error) {
     res.status(400).end();
         console.log(error);
   }
-};
+}
 
 /** Use ytdl-core to fetch the video. */
 function fetchMp4(obj, mp4Emitter, mp3Emitter) {
@@ -83,12 +84,12 @@ function fetchMp4(obj, mp4Emitter, mp3Emitter) {
     video.on('end', () => {
       if (progInt !== 100) {
         mp4Emitter.emit(newEventID, 100); 
-      };
+      }
       convertMp3(obj, mp3Emitter);
     });
   };
   start();
-};
+}
 
 function randomInt(max) {
   return Math.floor(Math.random() * max);
@@ -108,7 +109,7 @@ function randID(n) {
     }
   }
   return id;
-};
+}
 
 
 module.exports = {checkURL, fetchMp4}; 

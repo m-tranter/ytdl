@@ -54,7 +54,7 @@ app.get('/video/', (req, res) => {
 app.get('/:id/mp4Event/', async (req, res) => {
   function mp4Update(data) {
     doUpdate(res, data, req.params.id, mp4Emitter, mp4Update);
-  };
+  }
   startProgress(res, req.params.id, mp4Emitter, mp4Update); 
 });
 
@@ -62,7 +62,7 @@ app.get('/:id/mp4Event/', async (req, res) => {
 app.get('/:id/mp3Event', async (req, res) => {
   function mp3Update(data) {
     doUpdate(res, data, req.params.id, mp3Emitter, mp3Update);
-  };
+  }
   startProgress(res, req.params.id, mp3Emitter, mp3Update);
 });
 

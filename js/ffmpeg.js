@@ -14,7 +14,7 @@ function timeToSecs (time) {
   let s = Number(time.slice(6));
   s  += m * 60 + h * 360;
   return s;
-};
+}
 
 /** Use ffmpeg to create an mp3 from the video stream. Add metadata. */
 function convertMp3(obj, mp3Emitter) {
@@ -43,9 +43,9 @@ function convertMp3(obj, mp3Emitter) {
       if (percent !== 100) {
       mp3Emitter.emit(`event${obj.id}`, 100);
       }
-      const tagsWritten = id3.write(meta, audioPath);
+      id3.write(meta, audioPath);
     })
     .pipe(writeStream, {end: true});
-};
+}
 
 module.exports = convertMp3;
